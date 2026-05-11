@@ -1,0 +1,357 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: transparent; }
+h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+.app { display: flex; flex-direction: column; gap: 16px; padding: 1rem 0; }
+.top-bar { display: flex; align-items: center; justify-content: space-between; }
+.top-bar h1 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+.badge { font-size: 11px; background: var(--color-background-info); color: var(--color-text-info); padding: 3px 10px; border-radius: 20px; }
+
+.main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; }
+.panel-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+.classes-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.class-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.class-header { display: flex; align-items: center; gap: 6px; }
+.class-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.class-name-input { flex: 1; font-size: 13px; font-weight: 500; border: none; background: transparent; color: var(--color-text-primary); outline: none; min-width: 0; }
+.class-name-input::placeholder { color: var(--color-text-tertiary); }
+.sample-count { font-size: 11px; color: var(--color-text-tertiary); margin-left: auto; white-space: nowrap; }
+
+.class-actions { display: flex; gap: 6px; }
+.upload-btn { flex: 1; font-size: 12px; padding: 5px 8px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.upload-btn:hover { background: var(--color-background-tertiary); }
+.hidden-input { display: none; }
+.thumb-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.thumb { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; border: 0.5px solid var(--color-border-tertiary); }
+.del-btn { width: 20px; height: 20px; border-radius: 50%; background: var(--color-background-danger); color: var(--color-text-danger); border: none; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.add-class-btn { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px; font-size: 13px; color: var(--color-text-secondary); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.add-class-btn:hover { background: var(--color-background-secondary); }
+
+.train-section { display: flex; flex-direction: column; gap: 10px; }
+.train-btn { width: 100%; padding: 10px; font-size: 14px; font-weight: 500; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-primary); transition: background 0.15s; }
+.train-btn:hover:not(:disabled) { background: var(--color-background-tertiary); }
+.train-btn:disabled { opacity: 0.4; cursor: default; }
+.train-btn.ready { border-color: var(--color-border-info); background: var(--color-background-info); color: var(--color-text-info); }
+.train-btn.trained { border-color: var(--color-border-success); background: var(--color-background-success); color: var(--color-text-success); }
+
+.log { font-size: 12px; color: var(--color-text-secondary); min-height: 20px; }
+
+.infer-panel { display: flex; flex-direction: column; gap: 12px; }
+.drop-zone { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: var(--color-text-tertiary); font-size: 13px; position: relative; overflow: hidden; }
+.drop-zone.has-image { border-style: solid; border-color: var(--color-border-tertiary); }
+.drop-zone img { width: 100%; height: 140px; object-fit: contain; }
+.drop-zone .overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.04); padding: 4px 8px; font-size: 11px; text-align: center; }
+
+.results { display: flex; flex-direction: column; gap: 6px; }
+.result-row { display: flex; align-items: center; gap: 8px; }
+.result-label { font-size: 12px; color: var(--color-text-secondary); width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+.bar-track { flex: 1; height: 14px; background: var(--color-background-secondary); border-radius: 7px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 7px; transition: width 0.4s ease; }
+.result-pct { font-size: 12px; font-weight: 500; color: var(--color-text-primary); width: 34px; text-align: right; }
+.top-result { font-size: 22px; font-weight: 500; color: var(--color-text-primary); text-align: center; padding: 4px 0; }
+.top-result span { font-size: 13px; color: var(--color-text-secondary); font-weight: 400; margin-left: 4px; }
+
+.infer-input { display: none; }
+
+.epoch-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-secondary); }
+.epoch-row input[type=range] { flex: 1; }
+
+.placeholder-hint { font-size: 12px; color: var(--color-text-tertiary); text-align: center; padding: 16px 0; }
+</style>
+
+<h2 class="sr-only">티처블 머신 스타일 이미지 분류기. 클래스를 정의하고 이미지를 업로드한 후 학습 버튼을 눌러 분류기를 만드세요.</h2>
+
+<div class="app">
+  <div class="top-bar">
+    <h1>이미지 분류기</h1>
+    <span class="badge" id="statusBadge">준비</span>
+  </div>
+
+  <div class="main-grid">
+    <div class="panel classes-panel" id="classesPanel">
+      <div class="panel-title">클래스 정의</div>
+      <div id="classList"></div>
+      <button class="add-class-btn" onclick="addClass()">
+        <i class="ti ti-plus" aria-hidden="true"></i> 클래스 추가
+      </button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="panel train-section">
+        <div class="panel-title">학습</div>
+        <div class="epoch-row">
+          <label for="epochSlider" style="white-space:nowrap">에포크</label>
+          <input type="range" id="epochSlider" min="5" max="50" step="5" value="20" oninput="document.getElementById('epochVal').textContent=this.value">
+          <span id="epochVal" style="width:24px;font-size:13px;font-weight:500;color:var(--color-text-primary)">20</span>
+        </div>
+        <button class="train-btn" id="trainBtn" onclick="trainModel()">학습 시작</button>
+        <div class="log" id="trainLog">클래스마다 이미지를 2장 이상 추가하세요.</div>
+      </div>
+
+      <div class="panel infer-panel">
+        <div class="panel-title">예측</div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('inferInput').click()">
+          <i class="ti ti-photo-up" aria-hidden="true" style="font-size:28px"></i>
+          <div>이미지를 클릭하여 업로드</div>
+        </div>
+        <input type="file" class="infer-input" id="inferInput" accept="image/*" onchange="handleInfer(this)">
+        <div id="resultArea"><div class="placeholder-hint">학습 후 이미지를 업로드하면 분류 결과가 나타납니다.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#378ADD','#1D9E75','#D85A30','#9F77DD','#D4537E','#639922','#BA7517'];
+const COLORS_BG = ['#E6F1FB','#E1F5EE','#FAECE7','#EEEDFE','#FBEAF0','#EAF3DE','#FAEEDA'];
+
+let classes = [];
+let model = null;
+let trained = false;
+
+function uid() { return Math.random().toString(36).slice(2,8); }
+
+function addClass(name='') {
+  const id = uid();
+  classes.push({ id, name: name || `클래스 ${classes.length+1}`, images: [], color: COLORS[classes.length % COLORS.length], bg: COLORS_BG[classes.length % COLORS_BG.length] });
+  renderClasses();
+}
+
+function removeClass(id) {
+  classes = classes.filter(c => c.id !== id);
+  trained = false;
+  updateTrainBtn();
+  renderClasses();
+}
+
+function renderClasses() {
+  const el = document.getElementById('classList');
+  el.innerHTML = '';
+  classes.forEach(cls => {
+    const card = document.createElement('div');
+    card.className = 'class-card';
+    card.innerHTML = `
+      <div class="class-header">
+        <div class="class-dot" style="background:${cls.color}"></div>
+        <input class="class-name-input" type="text" value="${cls.name}" placeholder="클래스 이름" onchange="renameClass('${cls.id}', this.value)">
+        <span class="sample-count">${cls.images.length}장</span>
+        <button class="del-btn" onclick="removeClass('${cls.id}')" aria-label="클래스 삭제">×</button>
+      </div>
+      <div class="class-actions">
+        <label class="upload-btn" for="upload_${cls.id}">
+          <i class="ti ti-upload" aria-hidden="true" style="font-size:14px"></i> 이미지 추가
+        </label>
+        <input class="hidden-input" type="file" id="upload_${cls.id}" accept="image/*" multiple onchange="addImages('${cls.id}', this)">
+      </div>
+      <div class="thumb-row" id="thumbs_${cls.id}">
+        ${cls.images.map((img,i) => `<img class="thumb" src="${img.dataUrl}" alt="샘플 이미지 ${i+1}">`).join('')}
+      </div>
+    `;
+    el.appendChild(card);
+  });
+  updateTrainBtn();
+}
+
+function renameClass(id, name) {
+  const cls = classes.find(c => c.id === id);
+  if (cls) cls.name = name;
+}
+
+function addImages(id, input) {
+  const cls = classes.find(c => c.id === id);
+  if (!cls) return;
+  const files = Array.from(input.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        cls.images.push({ dataUrl: e.target.result, img });
+        loaded++;
+        if (loaded === files.length) { trained = false; renderClasses(); updateTrainBtn(); }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function canTrain() {
+  return classes.length >= 2 && classes.every(c => c.images.length >= 2);
+}
+
+function updateTrainBtn() {
+  const btn = document.getElementById('trainBtn');
+  if (trained) { btn.className = 'train-btn trained'; btn.textContent = '재학습'; }
+  else if (canTrain()) { btn.className = 'train-btn ready'; btn.textContent = '학습 시작 ↗'; }
+  else { btn.className = 'train-btn'; btn.textContent = '학습 시작'; }
+}
+
+function imgToTensor(imgEl, size=64) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgEl, 0, 0, size, size);
+  const d = ctx.getImageData(0,0,size,size).data;
+  const arr = [];
+  for (let i=0;i<d.length;i+=4) {
+    arr.push(d[i]/255, d[i+1]/255, d[i+2]/255);
+  }
+  return arr;
+}
+
+function extractFeatures(imgEl) {
+  const SIZE = 16;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE; canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgEl, 0, 0, SIZE, SIZE);
+  const d = ctx.getImageData(0,0,SIZE,SIZE).data;
+  const feat = [];
+  let rMean=0,gMean=0,bMean=0;
+  let px = SIZE*SIZE;
+  for (let i=0;i<d.length;i+=4) { rMean+=d[i]; gMean+=d[i+1]; bMean+=d[i+2]; }
+  rMean/=px; gMean/=px; bMean/=px;
+  feat.push(rMean/255, gMean/255, bMean/255);
+  let rVar=0,gVar=0,bVar=0;
+  for (let i=0;i<d.length;i+=4) {
+    rVar+=(d[i]-rMean)**2; gVar+=(d[i+1]-gMean)**2; bVar+=(d[i+2]-bMean)**2;
+  }
+  feat.push(Math.sqrt(rVar/px)/255, Math.sqrt(gVar/px)/255, Math.sqrt(bVar/px)/255);
+  const GRID=4;
+  const cell=SIZE/GRID;
+  for (let gy=0;gy<GRID;gy++) for (let gx=0;gx<GRID;gx++) {
+    let r=0,g=0,b=0,cnt=0;
+    for (let y=gy*cell;y<(gy+1)*cell;y++) for (let x=gx*cell;x<(gx+1)*cell;x++) {
+      const i=(y*SIZE+x)*4;
+      r+=d[i]; g+=d[i+1]; b+=d[i+2]; cnt++;
+    }
+    feat.push(r/cnt/255, g/cnt/255, b/cnt/255);
+  }
+  return feat;
+}
+
+function matMul(W, x) {
+  return W.map(row => row.reduce((s,w,j)=>s+w*x[j], 0));
+}
+function addBias(a, b) { return a.map((v,i)=>v+b[i]); }
+function relu(a) { return a.map(v=>Math.max(0,v)); }
+function softmax(a) {
+  const mx = Math.max(...a);
+  const ex = a.map(v=>Math.exp(v-mx));
+  const s = ex.reduce((a,b)=>a+b,0);
+  return ex.map(v=>v/s);
+}
+
+function trainNN(X, Y, nClass, epochs, lr=0.05) {
+  const nIn = X[0].length;
+  const nH = 32;
+  const randW = (r,c) => Array.from({length:r},()=>Array.from({length:c},()=>(Math.random()-0.5)*0.2));
+  let W1=randW(nH,nIn), b1=Array(nH).fill(0);
+  let W2=randW(nClass,nH), b2=Array(nClass).fill(0);
+
+  for (let ep=0;ep<epochs;ep++) {
+    for (let i=0;i<X.length;i++) {
+      const x=X[i], yTrue=Y[i];
+      const z1=addBias(matMul(W1,x),b1);
+      const a1=relu(z1);
+      const z2=addBias(matMul(W2,a1),b2);
+      const a2=softmax(z2);
+      const dz2=a2.map((v,j)=>v-(j===yTrue?1:0));
+      for (let k=0;k<nClass;k++) { for (let j=0;j<nH;j++) W2[k][j]-=lr*dz2[k]*a1[j]; b2[k]-=lr*dz2[k]; }
+      const da1=Array(nH).fill(0);
+      for (let k=0;k<nClass;k++) for (let j=0;j<nH;j++) da1[j]+=W2[k][j]*dz2[k];
+      const dz1=da1.map((v,j)=>v*(z1[j]>0?1:0));
+      for (let h=0;h<nH;h++) { for (let j=0;j<nIn;j++) W1[h][j]-=lr*dz1[h]*x[j]; b1[h]-=lr*dz1[h]; }
+    }
+  }
+  return { predict(x) {
+    const a1=relu(addBias(matMul(W1,x),b1));
+    return softmax(addBias(matMul(W2,a1),b2));
+  }};
+}
+
+function setLog(msg) { document.getElementById('trainLog').textContent = msg; }
+function setBadge(txt, type='') {
+  const el = document.getElementById('statusBadge');
+  el.textContent = txt;
+  el.style.background = type==='success' ? 'var(--color-background-success)' : type==='warn' ? 'var(--color-background-warning)' : 'var(--color-background-info)';
+  el.style.color = type==='success' ? 'var(--color-text-success)' : type==='warn' ? 'var(--color-text-warning)' : 'var(--color-text-info)';
+}
+
+async function trainModel() {
+  if (!canTrain()) { setLog('각 클래스에 이미지를 2장 이상 추가해주세요.'); return; }
+  const btn = document.getElementById('trainBtn');
+  btn.disabled = true;
+  setLog('특징 추출 중...');
+  setBadge('학습 중', 'warn');
+  const epochs = parseInt(document.getElementById('epochSlider').value);
+  await new Promise(r=>setTimeout(r,10));
+
+  const X=[], Y=[];
+  classes.forEach((cls,ci) => cls.images.forEach(img => { X.push(extractFeatures(img.img)); Y.push(ci); }));
+
+  setLog(`신경망 학습 중 (에포크 ${epochs})...`);
+  await new Promise(r=>setTimeout(r,10));
+  model = trainNN(X, Y, classes.length, epochs);
+  trained = true;
+  btn.disabled = false;
+  updateTrainBtn();
+  setLog(`학습 완료! 샘플 ${X.length}장, 에포크 ${epochs}`);
+  setBadge('학습 완료', 'success');
+}
+
+function handleInfer(input) {
+  if (!input.files[0]) return;
+  if (!trained || !model) { setLog('먼저 학습을 완료해주세요!'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const dz = document.getElementById('dropZone');
+      dz.innerHTML = `<img src="${e.target.result}" alt="분류할 이미지">`;
+      dz.classList.add('has-image');
+      dz.onclick = () => document.getElementById('inferInput').click();
+
+      const feat = extractFeatures(img);
+      const probs = model.predict(feat);
+      renderResults(probs);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+
+function renderResults(probs) {
+  const area = document.getElementById('resultArea');
+  const topIdx = probs.indexOf(Math.max(...probs));
+  const topCls = classes[topIdx];
+  area.innerHTML = `
+    <div class="top-result" style="color:${topCls.color}">${topCls.name}<span>${(probs[topIdx]*100).toFixed(1)}%</span></div>
+    <div class="results">
+      ${classes.map((cls,i)=>`
+        <div class="result-row">
+          <div class="result-label" title="${cls.name}">${cls.name}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${(probs[i]*100).toFixed(1)}%;background:${cls.color}"></div>
+          </div>
+          <div class="result-pct">${(probs[i]*100).toFixed(0)}%</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+addClass('클래스 1');
+addClass('클래스 2');
+</script>
