@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV 데이터 분류기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f8f6; color: #1a1a18; min-height: 100vh; }
+.container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #888; margin-bottom: 2rem; }
+
+.layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+@media(max-width:650px){ .layout { grid-template-columns: 1fr; } }
+
+.section { background: #fff; border: 1px solid #e8e8e5; border-radius: 14px; padding: 1.25rem; margin-bottom: 14px; }
+.section-title { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+/* 드롭존 */
+.drop-zone { border: 1.5px dashed #d0d0cc; border-radius: 10px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; position: relative; padding: 1.5rem; transition: background 0.15s; text-align: center; }
+.drop-zone:hover { background: #f4f4f0; }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-icon { font-size: 28px; color: #ccc; pointer-events: none; }
+.drop-label { font-size: 13px; color: #999; pointer-events: none; }
+.drop-sub { font-size: 11px; color: #bbb; pointer-events: none; }
+
+/* 테이블 프리뷰 */
+.table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 8px; border: 1px solid #e8e8e5; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #f4f4f0; padding: 7px 10px; text-align: left; font-weight: 600; color: #555; border-bottom: 1px solid #e8e8e5; white-space: nowrap; }
+td { padding: 6px 10px; border-bottom: 1px solid #f0f0ec; color: #333; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+.target-col { background: #EAF3DE; color: #3B6D11; font-weight: 600; }
+.more-rows { font-size: 11px; color: #aaa; padding: 6px 10px; }
+
+/* 컬럼 설정 */
+.col-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; user-select: none; }
+.badge-feature { background: #E6F1FB; color: #185FA5; border-color: #C0D8F5; }
+.badge-target { background: #EAF3DE; color: #3B6D11; border-color: #C4DFA8; }
+.badge-ignore { background: #f4f4f0; color: #aaa; border-color: #e0e0dc; }
+.badge-hint { font-size: 11px; color: #bbb; align-self: center; }
+
+/* 학습 버튼 */
+.train-btn { width: 100%; padding: 11px; background: #1a1a18; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s; margin-top: 10px; }
+.train-btn:hover { opacity: 0.85; }
+.train-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.info-text { font-size: 12px; color: #888; margin-top: 8px; line-height: 1.6; }
+.prog { height: 4px; background: #e8e8e5; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.prog-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.3s; width: 0%; }
+
+/* 예측 입력 */
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; }
+.input-group label { font-size: 11px; font-weight: 600; color: #888; }
+.input-group input { border: 1px solid #e0e0dc; border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none; transition: border-color 0.15s; }
+.input-group input:focus { border-color: #378ADD; }
+
+.pred-btn { width: 100%; padding: 10px; background: #378ADD; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s; }
+.pred-btn:hover { opacity: 0.85; }
+.pred-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* 결과 */
+.result-box { margin-top: 14px; background: #f8f8f6; border-radius: 10px; padding: 1rem; }
+.result-title { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.r-row { margin-bottom: 10px; }
+.r-label { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-bottom: 4px; }
+.r-pct { font-weight: 600; color: #1a1a18; }
+.r-bar { height: 6px; background: #e8e8e5; border-radius: 3px; overflow: hidden; }
+.r-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.top-answer { font-size: 15px; font-weight: 700; color: #1a1a18; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8e8e5; display: flex; align-items: center; gap: 8px; }
+.top-answer .conf { font-size: 13px; font-weight: 400; color: #888; }
+
+/* 샘플 다운로드 */
+.sample-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid #d0d0cc; background: #fff; font-size: 12px; color: #555; cursor: pointer; transition: background 0.15s; text-decoration: none; }
+.sample-btn:hover { background: #f4f4f0; }
+
+.stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+.stat { text-align: center; }
+.stat-val { font-size: 20px; font-weight: 700; color: #1a1a18; }
+.stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+.class-chip { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; margin: 2px; }
+
+.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📊 CSV 데이터 분류기</h1>
+  <p class="sub">CSV 파일을 업로드하고, 특성(feature) 컬럼과 타겟(target) 컬럼을 지정한 뒤 학습 후 분류하세요</p>
+
+  <div class="layout">
+    <!-- 좌측: 데이터 업로드 + 설정 -->
+    <div>
+      <!-- 샘플 다운로드 -->
+      <div class="section">
+        <div class="section-title"><i class="ti ti-file-text"></i> 샘플 데이터</div>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">붓꽃(Iris) 데이터셋 CSV 예시를 다운로드하여 테스트해보세요</p>
+        <button class="sample-btn" onclick="downloadSample()"><i class="ti ti-download"></i> iris_sample.csv 다운로드</button>
+        <div style="margin-top:10px;font-size:11px;color:#bbb;line-height:1.8">
+          컬럼: sepal_length, sepal_width, petal_length, petal_width, <strong style="color:#3B6D11">species</strong>
+        </div>
+      </div>
+
+      <!-- CSV 업로드 -->
+      <div class="section">
+        <div class="section-title"><i class="ti ti-upload"></i> CSV 업로드</div>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" accept=".csv,text/csv" onchange="loadCSV(this)">
+          <i class="ti ti-file-spreadsheet drop-icon"></i>
+          <div class="drop-label">CSV 파일을 클릭하여 업로드</div>
+          <div class="drop-sub">첫 행은 헤더(컬럼명)여야 합니다</div>
+        </div>
+        <div id="data-preview" style="display:none">
+          <div class="stat-row" id="data-stats"></div>
+          <div class="table-wrap" id="table-wrap"></div>
+        </div>
+      </div>
+
+      <!-- 컬럼 역할 설정 -->
+      <div class="section" id="col-config" style="display:none">
+        <div class="section-title"><i class="ti ti-settings"></i> 컬럼 역할 설정</div>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">각 컬럼을 클릭해서 역할을 지정하세요</p>
+        <div class="col-badges" id="col-badges"></div>
+        <div style="margin-top:10px;display:flex;gap:12px;font-size:11px;color:#aaa;flex-wrap:wrap">
+          <span><span class="badge badge-feature" style="padding:2px 6px">특성</span> 학습에 사용할 숫자 컬럼</span>
+          <span><span class="badge badge-target" style="padding:2px 6px">타겟</span> 분류할 정답 컬럼</span>
+          <span><span class="badge badge-ignore" style="padding:2px 6px">무시</span> 사용 안 함</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측: 학습 + 예측 -->
+    <div>
+      <!-- 학습 -->
+      <div class="section">
+        <div class="section-title"><i class="ti ti-brain"></i> 학습</div>
+        <div id="train-ready-msg" class="info-text">← CSV를 업로드하고 특성/타겟 컬럼을 설정하세요</div>
+        <div id="train-controls" style="display:none">
+          <div class="stat-row" id="train-stats"></div>
+          <button class="train-btn" id="train-btn" onclick="trainModel()">
+            <i class="ti ti-brain"></i> 학습 시작
+          </button>
+          <div class="info-text" id="train-info"></div>
+          <div class="prog"><div class="prog-fill" id="prog-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- 예측 -->
+      <div class="section" id="pred-section" style="display:none">
+        <div class="section-title"><i class="ti ti-search"></i> 예측</div>
+        <div id="pred-inputs" class="input-grid"></div>
+        <button class="pred-btn" id="pred-btn" onclick="predict()">
+          <i class="ti ti-sparkles"></i> 분류하기
+        </button>
+        <div class="result-box" id="result-box" style="display:none">
+          <div class="result-title">분류 결과</div>
+          <div id="result-bars"></div>
+          <div class="top-answer" id="top-answer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script>
+// ── 상태 ──────────────────────────────────────────────
+let rawData = [];      // 전체 행 배열 (객체)
+let columns = [];      // 컬럼명 배열
+let colRole = {};      // { colName: 'feature'|'target'|'ignore' }
+let model = null;
+let labelMap = {};     // 정수 → 클래스명
+let labelMapRev = {};  // 클래스명 → 정수
+let featureMean = [];
+let featureStd = [];
+let trained = false;
+const COLORS = ['#378ADD','#D4537E','#1D9E75','#BA7517','#7F77DD','#D85A30','#888'];
+
+// ── 샘플 CSV ──────────────────────────────────────────
+function downloadSample() {
+  const iris = [
+    ['sepal_length','sepal_width','petal_length','petal_width','species'],
+    [5.1,3.5,1.4,0.2,'Iris-setosa'],[4.9,3.0,1.4,0.2,'Iris-setosa'],[4.7,3.2,1.3,0.2,'Iris-setosa'],
+    [4.6,3.1,1.5,0.2,'Iris-setosa'],[5.0,3.6,1.4,0.2,'Iris-setosa'],[5.4,3.9,1.7,0.4,'Iris-setosa'],
+    [4.6,3.4,1.4,0.3,'Iris-setosa'],[5.0,3.4,1.5,0.2,'Iris-setosa'],[4.4,2.9,1.4,0.2,'Iris-setosa'],
+    [4.9,3.1,1.5,0.1,'Iris-setosa'],[5.4,3.7,1.5,0.2,'Iris-setosa'],[4.8,3.4,1.6,0.2,'Iris-setosa'],
+    [4.8,3.0,1.4,0.1,'Iris-setosa'],[4.3,3.0,1.1,0.1,'Iris-setosa'],[5.8,4.0,1.2,0.2,'Iris-setosa'],
+    [5.7,4.4,1.5,0.4,'Iris-setosa'],[5.4,3.9,1.3,0.4,'Iris-setosa'],[5.1,3.5,1.4,0.3,'Iris-setosa'],
+    [5.7,3.8,1.7,0.3,'Iris-setosa'],[5.1,3.8,1.5,0.3,'Iris-setosa'],[5.4,3.4,1.7,0.2,'Iris-setosa'],
+    [5.1,3.7,1.5,0.4,'Iris-setosa'],[4.6,3.6,1.0,0.2,'Iris-setosa'],[5.1,3.3,1.7,0.5,'Iris-setosa'],
+    [4.8,3.4,1.9,0.2,'Iris-setosa'],[5.0,3.0,1.6,0.2,'Iris-setosa'],[5.0,3.4,1.6,0.4,'Iris-setosa'],
+    [5.2,3.5,1.5,0.2,'Iris-setosa'],[5.2,3.4,1.4,0.2,'Iris-setosa'],[4.7,3.2,1.6,0.2,'Iris-setosa'],
+    [4.8,3.1,1.6,0.2,'Iris-setosa'],[5.4,3.4,1.5,0.4,'Iris-setosa'],[5.2,4.1,1.5,0.1,'Iris-setosa'],
+    [5.5,4.2,1.4,0.2,'Iris-setosa'],[4.9,3.1,1.5,0.2,'Iris-setosa'],[5.0,3.2,1.2,0.2,'Iris-setosa'],
+    [5.5,3.5,1.3,0.2,'Iris-setosa'],[4.9,3.6,1.4,0.1,'Iris-setosa'],[4.4,3.0,1.3,0.2,'Iris-setosa'],
+    [5.1,3.4,1.5,0.2,'Iris-setosa'],[5.0,3.5,1.3,0.3,'Iris-setosa'],[4.5,2.3,1.3,0.3,'Iris-setosa'],
+    [4.4,3.2,1.3,0.2,'Iris-setosa'],[5.0,3.5,1.6,0.6,'Iris-setosa'],[5.1,3.8,1.9,0.4,'Iris-setosa'],
+    [4.8,3.0,1.4,0.3,'Iris-setosa'],[5.1,3.8,1.6,0.2,'Iris-setosa'],[4.6,3.2,1.4,0.2,'Iris-setosa'],
+    [5.3,3.7,1.5,0.2,'Iris-setosa'],[5.0,3.3,1.4,0.2,'Iris-setosa'],
+    [7.0,3.2,4.7,1.4,'Iris-versicolor'],[6.4,3.2,4.5,1.5,'Iris-versicolor'],[6.9,3.1,4.9,1.5,'Iris-versicolor'],
+    [5.5,2.3,4.0,1.3,'Iris-versicolor'],[6.5,2.8,4.6,1.5,'Iris-versicolor'],[5.7,2.8,4.5,1.3,'Iris-versicolor'],
+    [6.3,3.3,4.7,1.6,'Iris-versicolor'],[4.9,2.4,3.3,1.0,'Iris-versicolor'],[6.6,2.9,4.6,1.3,'Iris-versicolor'],
+    [5.2,2.7,3.9,1.4,'Iris-versicolor'],[5.0,2.0,3.5,1.0,'Iris-versicolor'],[5.9,3.0,4.2,1.5,'Iris-versicolor'],
+    [6.0,2.2,4.0,1.0,'Iris-versicolor'],[6.1,2.9,4.7,1.4,'Iris-versicolor'],[5.6,2.9,3.6,1.3,'Iris-versicolor'],
+    [6.7,3.1,4.4,1.4,'Iris-versicolor'],[5.6,3.0,4.5,1.5,'Iris-versicolor'],[5.8,2.7,4.1,1.0,'Iris-versicolor'],
+    [6.2,2.2,4.5,1.5,'Iris-versicolor'],[5.6,2.5,3.9,1.1,'Iris-versicolor'],[5.9,3.2,4.8,1.8,'Iris-versicolor'],
+    [6.1,2.8,4.0,1.3,'Iris-versicolor'],[6.3,2.5,4.9,1.5,'Iris-versicolor'],[6.1,2.8,4.7,1.2,'Iris-versicolor'],
+    [6.4,2.9,4.3,1.3,'Iris-versicolor'],[6.6,3.0,4.4,1.4,'Iris-versicolor'],[6.8,2.8,4.8,1.4,'Iris-versicolor'],
+    [6.7,3.0,5.0,1.7,'Iris-versicolor'],[6.0,2.9,4.5,1.5,'Iris-versicolor'],[5.7,2.6,3.5,1.0,'Iris-versicolor'],
+    [5.5,2.4,3.8,1.1,'Iris-versicolor'],[5.5,2.4,3.7,1.0,'Iris-versicolor'],[5.8,2.7,3.9,1.2,'Iris-versicolor'],
+    [6.0,2.7,5.1,1.6,'Iris-versicolor'],[5.4,3.0,4.5,1.5,'Iris-versicolor'],[6.0,3.4,4.5,1.6,'Iris-versicolor'],
+    [6.7,3.1,4.7,1.5,'Iris-versicolor'],[6.3,2.3,4.4,1.3,'Iris-versicolor'],[5.6,3.0,4.1,1.3,'Iris-versicolor'],
+    [5.5,2.5,4.0,1.3,'Iris-versicolor'],[5.5,2.6,4.4,1.2,'Iris-versicolor'],[6.1,3.0,4.6,1.4,'Iris-versicolor'],
+    [5.8,2.6,4.0,1.2,'Iris-versicolor'],[5.0,2.3,3.3,1.0,'Iris-versicolor'],[5.6,2.7,4.2,1.3,'Iris-versicolor'],
+    [5.7,3.0,4.2,1.2,'Iris-versicolor'],[5.7,2.9,4.2,1.3,'Iris-versicolor'],[6.2,2.9,4.3,1.3,'Iris-versicolor'],
+    [5.1,2.5,3.0,1.1,'Iris-versicolor'],[5.7,2.8,4.1,1.3,'Iris-versicolor'],
+    [6.3,3.3,6.0,2.5,'Iris-virginica'],[5.8,2.7,5.1,1.9,'Iris-virginica'],[7.1,3.0,5.9,2.1,'Iris-virginica'],
+    [6.3,2.9,5.6,1.8,'Iris-virginica'],[6.5,3.0,5.8,2.2,'Iris-virginica'],[7.6,3.0,6.6,2.1,'Iris-virginica'],
+    [4.9,2.5,4.5,1.7,'Iris-virginica'],[7.3,2.9,6.3,1.8,'Iris-virginica'],[6.7,2.5,5.8,1.8,'Iris-virginica'],
+    [7.2,3.6,6.1,2.5,'Iris-virginica'],[6.5,3.2,5.1,2.0,'Iris-virginica'],[6.4,2.7,5.3,1.9,'Iris-virginica'],
+    [6.8,3.0,5.5,2.1,'Iris-virginica'],[5.7,2.5,5.0,2.0,'Iris-virginica'],[5.8,2.8,5.1,2.4,'Iris-virginica'],
+    [6.4,3.2,5.3,2.3,'Iris-virginica'],[6.5,3.0,5.5,1.8,'Iris-virginica'],[7.7,3.8,6.7,2.2,'Iris-virginica'],
+    [7.7,2.6,6.9,2.3,'Iris-virginica'],[6.0,2.2,5.0,1.5,'Iris-virginica'],[6.9,3.2,5.7,2.3,'Iris-virginica'],
+    [5.6,2.8,4.9,2.0,'Iris-virginica'],[7.7,2.8,6.7,2.0,'Iris-virginica'],[6.3,2.7,4.9,1.8,'Iris-virginica'],
+    [6.7,3.3,5.7,2.1,'Iris-virginica'],[7.2,3.2,6.0,1.8,'Iris-virginica'],[6.2,2.8,4.8,1.8,'Iris-virginica'],
+    [6.1,3.0,4.9,1.8,'Iris-virginica'],[6.4,2.8,5.6,2.1,'Iris-virginica'],[7.2,3.0,5.8,1.6,'Iris-virginica'],
+    [7.4,2.8,6.1,1.9,'Iris-virginica'],[7.9,3.8,6.4,2.0,'Iris-virginica'],[6.4,2.8,5.6,2.2,'Iris-virginica'],
+    [6.3,2.8,5.1,1.5,'Iris-virginica'],[6.1,2.6,5.6,1.4,'Iris-virginica'],[7.7,3.0,6.1,2.3,'Iris-virginica'],
+    [6.3,3.4,5.6,2.4,'Iris-virginica'],[6.4,3.1,5.5,1.8,'Iris-virginica'],[6.0,3.0,4.8,1.8,'Iris-virginica'],
+    [6.9,3.1,5.4,2.1,'Iris-virginica'],[6.7,3.1,5.6,2.4,'Iris-virginica'],[6.9,3.1,5.1,2.3,'Iris-virginica'],
+    [5.8,2.7,5.1,1.9,'Iris-virginica'],[6.8,3.2,5.9,2.3,'Iris-virginica'],[6.7,3.3,5.7,2.5,'Iris-virginica'],
+    [6.7,3.0,5.2,2.3,'Iris-virginica'],[6.3,2.5,5.0,1.9,'Iris-virginica'],[6.5,3.0,5.2,2.0,'Iris-virginica'],
+    [6.2,3.4,5.4,2.3,'Iris-virginica'],[5.9,3.0,5.1,1.8,'Iris-virginica'],
+  ];
+  const csv = iris.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'iris_sample.csv';
+  a.click();
+}
+
+// ── CSV 로드 ──────────────────────────────────────────
+function loadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    parseCSV(text);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  columns = lines[0].split(',').map(c => c.trim().replace(/^"|"$/g,''));
+  rawData = lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
+    const obj = {};
+    columns.forEach((c, i) => obj[c] = vals[i] || '');
+    return obj;
+  });
+
+  // 자동 역할 추정
+  colRole = {};
+  columns.forEach(col => {
+    const vals = rawData.map(r => r[col]);
+    const isNum = vals.every(v => v !== '' && !isNaN(Number(v)));
+    // 마지막 컬럼이거나 숫자가 아니면 target 후보
+    if (!isNum || col === columns[columns.length - 1]) {
+      colRole[col] = 'target';
+    } else {
+      colRole[col] = 'feature';
+    }
+  });
+  // target 여러 개면 첫 target만 남기고 나머지 ignore
+  let targetSet = false;
+  columns.forEach(col => {
+    if (colRole[col] === 'target') {
+      if (targetSet) colRole[col] = 'ignore';
+      else targetSet = true;
+    }
+  });
+
+  renderPreview();
+  renderColConfig();
+  updateTrainControls();
+}
+
+function renderPreview() {
+  document.getElementById('data-preview').style.display = 'block';
+  const classes = [...new Set(rawData.map(r => {
+    const tc = columns.find(c => colRole[c] === 'target');
+    return tc ? r[tc] : '';
+  }))].filter(Boolean);
+
+  document.getElementById('data-stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${rawData.length}</div><div class="stat-label">행</div></div>
+    <div class="stat"><div class="stat-val">${columns.length}</div><div class="stat-label">컬럼</div></div>
+    <div class="stat"><div class="stat-val">${classes.length || '?'}</div><div class="stat-label">클래스</div></div>`;
+
+  const preview = rawData.slice(0, 5);
+  const tc = columns.find(c => colRole[c] === 'target');
+  document.getElementById('table-wrap').innerHTML = `
+    <table>
+      <thead><tr>${columns.map(c => `<th class="${c===tc?'target-col':''}">${c}${c===tc?' ★':''}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${preview.map(row => `<tr>${columns.map(c => `<td class="${c===tc?'target-col':''}">${row[c]}</td>`).join('')}</tr>`).join('')}
+        ${rawData.length > 5 ? `<tr><td colspan="${columns.length}" class="more-rows">... 외 ${rawData.length - 5}행</td></tr>` : ''}
+      </tbody>
+    </table>`;
+}
+
+function renderColConfig() {
+  document.getElementById('col-config').style.display = 'block';
+  const wrap = document.getElementById('col-badges');
+  wrap.innerHTML = columns.map(col => {
+    const role = colRole[col];
+    const cls = role === 'feature' ? 'badge-feature' : role === 'target' ? 'badge-target' : 'badge-ignore';
+    const icon = role === 'feature' ? 'ti-chart-bar' : role === 'target' ? 'ti-tag' : 'ti-eye-off';
+    return `<span class="badge ${cls}" onclick="cycleRole('${col}')" title="클릭하여 역할 변경">
+      <i class="ti ${icon}"></i> ${col}
+    </span>`;
+  }).join('') + `<span class="badge-hint">클릭하여 역할 변경</span>`;
+}
+
+function cycleRole(col) {
+  const order = ['feature', 'target', 'ignore'];
+  const cur = colRole[col];
+  const next = order[(order.indexOf(cur) + 1) % order.length];
+  // target은 하나만 허용
+  if (next === 'target') {
+    const existing = columns.find(c => colRole[c] === 'target' && c !== col);
+    if (existing) colRole[existing] = 'feature';
+  }
+  colRole[col] = next;
+  renderColConfig();
+  renderPreview();
+  updateTrainControls();
+}
+
+function updateTrainControls() {
+  const features = columns.filter(c => colRole[c] === 'feature');
+  const target = columns.find(c => colRole[c] === 'target');
+  const ctrl = document.getElementById('train-controls');
+  const msg = document.getElementById('train-ready-msg');
+
+  if (!target || features.length === 0) {
+    ctrl.style.display = 'none';
+    msg.style.display = 'block';
+    msg.textContent = !target ? '타겟(★) 컬럼을 지정하세요' : '특성 컬럼을 1개 이상 지정하세요';
+    return;
+  }
+
+  msg.style.display = 'none';
+  ctrl.style.display = 'block';
+
+  const classes = [...new Set(rawData.map(r => r[target]))].filter(Boolean);
+  document.getElementById('train-stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${features.length}</div><div class="stat-label">특성</div></div>
+    <div class="stat"><div class="stat-val">${classes.length}</div><div class="stat-label">클래스</div></div>
+    <div class="stat"><div class="stat-val">${rawData.length}</div><div class="stat-label">샘플</div></div>`;
+  document.getElementById('train-info').textContent = '학습 시작 버튼을 눌러주세요';
+}
+
+// ── 학습 ──────────────────────────────────────────────
+async function trainModel() {
+  const features = columns.filter(c => colRole[c] === 'feature');
+  const targetCol = columns.find(c => colRole[c] === 'target');
+  if (!targetCol || features.length === 0) return;
+
+  document.getElementById('train-btn').disabled = true;
+  document.getElementById('train-info').textContent = '데이터 준비 중...';
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = '10%';
+
+  // 레이블 인코딩
+  const classNames = [...new Set(rawData.map(r => r[targetCol]))].filter(Boolean).sort();
+  labelMap = {}; labelMapRev = {};
+  classNames.forEach((name, i) => { labelMap[i] = name; labelMapRev[name] = i; });
+
+  // X, y 준비
+  const X_raw = rawData.map(row => features.map(f => parseFloat(row[f]) || 0));
+  const y_raw = rawData.map(row => labelMapRev[row[targetCol]] ?? 0);
+
+  // 정규화
+  featureMean = features.map((_, fi) => {
+    const vals = X_raw.map(r => r[fi]);
+    return vals.reduce((a,b)=>a+b,0) / vals.length;
+  });
+  featureStd = features.map((_, fi) => {
+    const vals = X_raw.map(r => r[fi]);
+    const mean = featureMean[fi];
+    const variance = vals.reduce((a,b)=>a+(b-mean)**2,0) / vals.length;
+    return Math.sqrt(variance) || 1;
+  });
+  const X_norm = X_raw.map(row => row.map((v,fi) => (v - featureMean[fi]) / featureStd[fi]));
+
+  fill.style.width = '30%';
+  document.getElementById('train-info').textContent = '모델 구성 중...';
+  await tf.nextFrame();
+
+  // 모델 구성
+  if (model) { model.dispose(); model = null; }
+  const numClasses = classNames.length;
+  model = tf.sequential();
+  model.add(tf.layers.dense({ inputShape: [features.length], units: 64, activation: 'relu' }));
+  model.add(tf.layers.dropout({ rate: 0.2 }));
+  model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
+  model.add(tf.layers.dense({ units: numClasses, activation: 'softmax' }));
+  model.compile({ optimizer: tf.train.adam(0.01), loss: 'sparseCategoricalCrossentropy', metrics: ['accuracy'] });
+
+  const xs = tf.tensor2d(X_norm);
+  const ys = tf.tensor1d(y_raw, 'int32');
+
+  fill.style.width = '50%';
+  document.getElementById('train-info').textContent = '학습 중...';
+
+  await model.fit(xs, ys, {
+    epochs: 80,
+    batchSize: 16,
+    validationSplit: 0.1,
+    shuffle: true,
+    callbacks: {
+      onEpochEnd: async (epoch, logs) => {
+        const pct = 50 + Math.round((epoch / 80) * 45);
+        fill.style.width = pct + '%';
+        if (epoch % 10 === 0) {
+          document.getElementById('train-info').textContent =
+            `학습 중... (${epoch}/80) — 정확도: ${(logs.acc * 100).toFixed(1)}%`;
+          await tf.nextFrame();
+        }
+      }
+    }
+  });
+
+  xs.dispose(); ys.dispose();
+  fill.style.width = '100%';
+  trained = true;
+  document.getElementById('train-btn').disabled = false;
+  document.getElementById('train-info').textContent = '✅ 학습 완료! 오른쪽에서 예측해보세요';
+  renderPredSection(features);
+}
+
+// ── 예측 UI ──────────────────────────────────────────
+function renderPredSection(features) {
+  document.getElementById('pred-section').style.display = 'block';
+  document.getElementById('pred-inputs').innerHTML = features.map((f, i) => `
+    <div class="input-group">
+      <label>${f}</label>
+      <input type="number" id="feat-${i}" placeholder="예: ${getSampleVal(f)}" step="any">
+    </div>`).join('');
+}
+
+function getSampleVal(colName) {
+  const vals = rawData.map(r => parseFloat(r[colName])).filter(v => !isNaN(v));
+  if (vals.length === 0) return '0';
+  return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+}
+
+async function predict() {
+  if (!trained || !model) return;
+  const features = columns.filter(c => colRole[c] === 'feature');
+  const inputs = features.map((_, i) => parseFloat(document.getElementById(`feat-${i}`).value) || 0);
+  const norm = inputs.map((v, fi) => (v - featureMean[fi]) / featureStd[fi]);
+  const xs = tf.tensor2d([norm]);
+  const pred = model.predict(xs);
+  const probs = await pred.data();
+  xs.dispose(); pred.dispose();
+
+  const numClasses = Object.keys(labelMap).length;
+  const classNames = Array.from({length: numClasses}, (_, i) => labelMap[i]);
+  const sorted = classNames.map((name, i) => ({ name, prob: probs[i] })).sort((a,b) => b.prob - a.prob);
+
+  document.getElementById('result-box').style.display = 'block';
+  document.getElementById('result-bars').innerHTML = sorted.map((item, idx) => `
+    <div class="r-row">
+      <div class="r-label">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${COLORS[idx % COLORS.length]};display:inline-block"></span>
+          ${item.name}
+        </span>
+        <span class="r-pct">${(item.prob*100).toFixed(1)}%</span>
+      </div>
+      <div class="r-bar"><div class="r-fill" style="width:${(item.prob*100).toFixed(1)}%;background:${COLORS[idx % COLORS.length]}"></div></div>
+    </div>`).join('');
+
+  document.getElementById('top-answer').innerHTML =
+    `<span style="width:12px;height:12px;border-radius:50%;background:${COLORS[0]};display:inline-block"></span>
+     ${sorted[0].name} <span class="conf">(${(sorted[0].prob*100).toFixed(1)}% 확신)</span>`;
+}
+</script>
+</body>
+</html>
