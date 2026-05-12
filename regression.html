@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회귀 분석기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f2;color:#1a1a18;min-height:100vh}
+.container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.sub{font-size:13px;color:#888;margin-bottom:1.5rem}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:1.25rem;align-items:start}
+@media(max-width:720px){.layout{grid-template-columns:1fr}}
+.section{background:#fff;border:1px solid #e8e8e5;border-radius:14px;padding:1.25rem;margin-bottom:12px}
+.sec-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* 데이터 입력 테이블 */
+.data-table-wrap{overflow-x:auto;margin-bottom:10px}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:400px}
+.data-table th{background:#f4f4f0;padding:6px 8px;text-align:center;font-weight:600;color:#555;border-bottom:1px solid #e8e8e5;white-space:nowrap;position:relative}
+.data-table td{padding:3px 4px;border-bottom:1px solid #f4f4f0;text-align:center}
+.data-table input[type=number]{width:100%;border:1px solid transparent;border-radius:5px;padding:4px 6px;font-size:12px;text-align:center;outline:none;background:transparent}
+.data-table input[type=number]:focus{border-color:#378ADD;background:#fff}
+.data-table tr:hover td{background:#fafafa}
+.del-row-btn{background:none;border:none;cursor:pointer;color:#ccc;font-size:13px;padding:2px 4px;border-radius:4px}
+.del-row-btn:hover{color:#e24b4a;background:#fef0f0}
+.col-del-btn{position:absolute;top:2px;right:2px;background:none;border:none;cursor:pointer;color:#ccc;font-size:10px;padding:1px 3px;border-radius:3px;line-height:1}
+.col-del-btn:hover{color:#e24b4a;background:#fef0f0}
+.target-head{background:#EAF3DE;color:#3B6D11}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;border:1px solid #e0e0dc;background:#fff;font-size:12px;font-weight:500;cursor:pointer;color:#333;transition:background .15s}
+.btn:hover{background:#f4f4f0}
+.btn-primary{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.btn-primary:hover{background:#333;opacity:.9}
+.btn-blue{background:#378ADD;color:#fff;border-color:#378ADD}
+.btn-blue:hover{opacity:.85}
+.btn-danger{color:#c0392b;border-color:#f5c6c6}
+.btn-danger:hover{background:#fef0f0}
+
+/* 컬럼 추가 팝업 */
+.add-col-form{display:none;background:#f8f8f6;border:1px solid #e0e0dc;border-radius:8px;padding:10px;margin-top:8px}
+.add-col-form.open{display:block}
+.add-col-form input[type=text]{border:1px solid #e0e0dc;border-radius:6px;padding:6px 10px;font-size:13px;outline:none;width:100%;margin-bottom:6px}
+.add-col-form input:focus{border-color:#378ADD}
+
+/* CSV 드롭존 */
+.drop-zone{border:1.5px dashed #d0d0cc;border-radius:10px;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;padding:1rem;transition:background .15s;text-align:center}
+.drop-zone:hover{background:#f4f4f0}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:24px;color:#ccc;pointer-events:none}
+
+/* 모델 선택 */
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.model-card{border:1.5px solid #e8e8e5;border-radius:9px;padding:9px 11px;cursor:pointer;transition:all .15s;position:relative}
+.model-card:hover{border-color:#b0c8e8;background:#f7fafd}
+.model-card.selected{border-color:#378ADD;background:#EBF4FF}
+.model-card input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+.model-name{font-size:12px;font-weight:700;color:#1a1a18;display:flex;align-items:center;gap:5px}
+.model-name i{font-size:14px;color:#378ADD}
+.model-card.selected .model-name i{color:#185FA5}
+.model-desc{font-size:10px;color:#888;margin-top:2px;line-height:1.4}
+.model-tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-top:4px}
+.tag-fast{background:#EAF3DE;color:#3B6D11}
+.tag-mid{background:#FEF3DC;color:#7A4E0D}
+.tag-acc{background:#EEF1FE;color:#3730A3}
+
+/* 학습 */
+.train-btn{width:100%;padding:10px;background:#1a1a18;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s;margin-top:10px}
+.train-btn:hover{opacity:.85}
+.train-btn:disabled{opacity:.3;cursor:not-allowed}
+.info-text{font-size:12px;color:#888;margin-top:8px;line-height:1.6}
+.prog{height:4px;background:#e8e8e5;border-radius:2px;margin-top:8px;overflow:hidden}
+.prog-fill{height:100%;background:#1D9E75;border-radius:2px;transition:width .3s;width:0%}
+
+/* 예측 입력 */
+.pred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.pred-group{display:flex;flex-direction:column;gap:3px}
+.pred-group label{font-size:11px;font-weight:600;color:#888}
+.pred-group input{border:1px solid #e0e0dc;border-radius:6px;padding:6px 10px;font-size:13px;outline:none;transition:border-color .15s}
+.pred-group input:focus{border-color:#378ADD}
+
+/* 결과 */
+.result-card{background:linear-gradient(135deg,#EBF4FF,#f0f8ee);border:1px solid #C0D8F5;border-radius:12px;padding:1rem;margin-top:12px;text-align:center}
+.result-val{font-size:32px;font-weight:800;color:#1a1a18}
+.result-unit{font-size:14px;color:#888;margin-top:2px}
+.result-model{font-size:11px;color:#aaa;margin-top:6px}
+.metrics-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;justify-content:center}
+.metric{background:#fff;border:1px solid #e8e8e5;border-radius:8px;padding:6px 12px;text-align:center}
+.metric-val{font-size:14px;font-weight:700;color:#1a1a18}
+.metric-label{font-size:10px;color:#aaa;margin-top:1px}
+
+/* 차트 */
+.chart-wrap{position:relative;width:100%;height:260px;margin-top:10px}
+
+/* 통계 뱃지 */
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.stat-val{font-size:18px;font-weight:700;color:#1a1a18}
+.stat-label{font-size:10px;color:#aaa;margin-top:1px}
+
+.sample-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;border:1px solid #d0d0cc;background:#fff;font-size:11px;color:#555;cursor:pointer;transition:background .15s}
+.sample-btn:hover{background:#f4f4f0}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📈 회귀 분석기</h1>
+  <p class="sub">시계열 또는 다변수 데이터를 입력하고, 5가지 회귀 모델 중 선택해 미래값을 예측하세요</p>
+
+  <div class="layout">
+    <!-- 좌측: 데이터 + 모델 설정 -->
+    <div>
+      <!-- 샘플 데이터 -->
+      <div class="section">
+        <div class="sec-title"><i class="ti ti-file-text"></i> 샘플 데이터</div>
+        <p style="font-size:12px;color:#888;margin-bottom:8px">지구 온난화 시뮬레이션 데이터 (1970~2023)</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="sample-btn" onclick="loadSample()"><i class="ti ti-temperature"></i> 온도 예측 샘플 로드</button>
+          <button class="sample-btn" onclick="downloadCSV()"><i class="ti ti-download"></i> CSV 저장</button>
+        </div>
+      </div>
+
+      <!-- CSV 업로드 -->
+      <div class="section">
+        <div class="sec-title"><i class="ti ti-upload"></i> CSV 업로드</div>
+        <div class="drop-zone">
+          <input type="file" accept=".csv" onchange="uploadCSV(this)">
+          <i class="ti ti-file-spreadsheet drop-icon"></i>
+          <div style="font-size:12px;color:#999;pointer-events:none">CSV 클릭하여 불러오기</div>
+          <div style="font-size:11px;color:#bbb;pointer-events:none">첫 행 헤더, 마지막 컬럼이 target</div>
+        </div>
+      </div>
+
+      <!-- 데이터 테이블 -->
+      <div class="section">
+        <div class="sec-title"><i class="ti ti-table"></i> 데이터 편집
+          <span id="data-badge" style="margin-left:auto;font-size:11px;color:#aaa;font-weight:400"></span>
+        </div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="data-table">
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="addRow()"><i class="ti ti-plus"></i> 행 추가</button>
+          <button class="btn" onclick="toggleAddCol()"><i class="ti ti-column-insert-right"></i> 컬럼 추가</button>
+          <button class="btn btn-danger" onclick="clearAllData()" style="margin-left:auto"><i class="ti ti-trash"></i> 전체 삭제</button>
+        </div>
+        <div class="add-col-form" id="add-col-form">
+          <input type="text" id="new-col-name" placeholder="컬럼명 입력 (예: 습도)" onkeydown="if(event.key==='Enter')addColumn()">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-blue" style="flex:1" onclick="addColumn()"><i class="ti ti-check"></i> 추가</button>
+            <button class="btn" onclick="toggleAddCol()">취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모델 선택 -->
+      <div class="section">
+        <div class="sec-title"><i class="ti ti-brain"></i> 회귀 모델 선택</div>
+        <div class="model-grid">
+          <label class="model-card selected">
+            <input type="radio" name="reg" value="lr" checked onchange="selectModel(this)">
+            <div class="model-name"><i class="ti ti-trending-up"></i> 선형 회귀</div>
+            <div class="model-desc">최소제곱법. 빠르고 해석 쉬움</div>
+            <span class="model-tag tag-fast">⚡ 즉시</span>
+          </label>
+          <label class="model-card">
+            <input type="radio" name="reg" value="ridge" onchange="selectModel(this)">
+            <div class="model-name"><i class="ti ti-wave-sine"></i> Ridge 회귀</div>
+            <div class="model-desc">L2 정규화. 과적합 억제</div>
+            <span class="model-tag tag-fast">⚡ 즉시</span>
+          </label>
+          <label class="model-card">
+            <input type="radio" name="reg" value="poly" onchange="selectModel(this)">
+            <div class="model-name"><i class="ti ti-chart-line"></i> 다항 회귀</div>
+            <div class="model-desc">비선형 패턴 캡처 (2차)</div>
+            <span class="model-tag tag-fast">⚡ 즉시</span>
+          </label>
+          <label class="model-card">
+            <input type="radio" name="reg" value="dt" onchange="selectModel(this)">
+            <div class="model-name"><i class="ti ti-git-branch"></i> 결정 트리</div>
+            <div class="model-desc">비선형·상호작용 포착</div>
+            <span class="model-tag tag-fast">⚡ 즉시</span>
+          </label>
+          <label class="model-card" style="grid-column:span 2">
+            <input type="radio" name="reg" value="rf" onchange="selectModel(this)">
+            <div class="model-name"><i class="ti ti-trees"></i> 랜덤 포레스트</div>
+            <div class="model-desc">50트리 앙상블. 높은 정확도, 이상치에 강함</div>
+            <span class="model-tag tag-mid">🌲 보통</span>
+            <span class="model-tag tag-acc" style="margin-left:4px">🏆 고정확도</span>
+          </label>
+        </div>
+        <button class="train-btn" id="train-btn" onclick="trainModel()">
+          <i class="ti ti-brain"></i> 학습 시작
+        </button>
+        <div class="info-text" id="train-info">데이터를 입력하고 학습 시작을 누르세요</div>
+        <div class="prog"><div class="prog-fill" id="prog-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- 우측: 결과 -->
+    <div>
+      <!-- 예측 -->
+      <div class="section" id="pred-section" style="display:none">
+        <div class="sec-title"><i class="ti ti-sparkles"></i> 예측
+          <span id="pred-model-badge" style="margin-left:6px;font-size:10px;color:#aaa;font-weight:400"></span>
+        </div>
+        <div class="pred-grid" id="pred-inputs"></div>
+        <button class="btn btn-blue" style="width:100%" onclick="predict()">
+          <i class="ti ti-calculator"></i> 회귀 출력값 계산
+        </button>
+        <div class="result-card" id="result-card" style="display:none">
+          <div style="font-size:12px;color:#888;margin-bottom:4px" id="result-label-text">예측 결과</div>
+          <div class="result-val" id="result-val">—</div>
+          <div class="result-unit" id="result-unit"></div>
+          <div class="metrics-row" id="metrics-row"></div>
+          <div class="result-model" id="result-model"></div>
+        </div>
+      </div>
+
+      <!-- 학습 결과 통계 -->
+      <div class="section" id="stats-section" style="display:none">
+        <div class="sec-title"><i class="ti ti-report-analytics"></i> 모델 성능</div>
+        <div class="stat-row" id="perf-stats"></div>
+        <div class="chart-wrap">
+          <canvas id="scatter-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- 추세 차트 -->
+      <div class="section" id="trend-section" style="display:none">
+        <div class="sec-title"><i class="ti ti-chart-line"></i> 추세 차트
+          <span style="font-size:10px;color:#bbb;font-weight:400;margin-left:4px">실제값 vs 예측값</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trend-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- 안내 -->
+      <div class="section" id="guide-section">
+        <div class="sec-title"><i class="ti ti-info-circle"></i> 사용 방법</div>
+        <div style="font-size:13px;color:#555;line-height:2">
+          <div>① 샘플 로드 또는 CSV 업로드로 데이터 준비</div>
+          <div>② 행/컬럼 추가·삭제로 데이터 직접 편집 가능</div>
+          <div>③ 마지막 컬럼이 <strong>target(예측 대상)</strong>이 됩니다</div>
+          <div>④ 회귀 모델 선택 후 학습 시작</div>
+          <div>⑤ 입력값 넣고 회귀 출력값 계산</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 상태
+// ══════════════════════════════════════════
+let columns = [];   // 전체 컬럼명
+let rows = [];      // 각 행: 숫자 배열 (columns 순)
+let targetIdx = 0;  // 마지막 컬럼이 target
+let trainedModel = null, trainedType = '', trained = false;
+let featureMean = [], featureStd = [], targetMean = 0, targetStd = 1;
+let scatterChart = null, trendChart = null;
+
+// ══════════════════════════════════════════
+// 샘플 데이터 (지구온난화 시뮬레이션)
+// ══════════════════════════════════════════
+function loadSample() {
+  columns = ['연도', '이산화탄소(ppm)', '해수면(mm)', '열대야(일)', '강수량(mm)', '평균기온(°C)'];
+  // 1970~2023 시뮬레이션 데이터
+  const base = [
+    [1970,325,0,3,1200,13.8],[1971,326,2,3,1185,13.9],[1972,327,4,3,1210,14.0],
+    [1973,329,7,4,1195,14.1],[1974,330,9,4,1220,14.0],[1975,331,11,4,1230,14.1],
+    [1976,332,13,4,1200,14.0],[1977,334,16,5,1180,14.2],[1978,335,19,5,1210,14.3],
+    [1979,336,22,5,1195,14.2],[1980,338,25,6,1175,14.4],[1981,339,28,6,1185,14.5],
+    [1982,341,31,6,1220,14.4],[1983,342,35,7,1195,14.6],[1984,344,38,7,1205,14.5],
+    [1985,345,42,7,1190,14.6],[1986,347,46,8,1185,14.7],[1987,348,50,8,1175,14.8],
+    [1988,350,55,9,1165,14.9],[1989,352,59,9,1180,14.9],[1990,354,64,10,1160,15.1],
+    [1991,355,69,10,1170,15.0],[1992,356,74,10,1185,15.0],[1993,358,79,11,1175,15.1],
+    [1994,360,85,11,1160,15.2],[1995,361,90,12,1150,15.3],[1996,363,96,12,1165,15.2],
+    [1997,364,102,13,1155,15.4],[1998,366,108,14,1140,15.6],[1999,368,114,13,1160,15.4],
+    [2000,369,121,14,1150,15.5],[2001,371,128,15,1140,15.6],[2002,373,135,15,1130,15.7],
+    [2003,375,142,16,1120,15.8],[2004,377,150,16,1135,15.7],[2005,379,158,17,1120,15.9],
+    [2006,381,166,18,1110,16.0],[2007,383,175,18,1100,16.1],[2008,385,184,19,1115,16.0],
+    [2009,387,193,19,1105,16.1],[2010,389,203,20,1095,16.3],[2011,391,213,21,1085,16.2],
+    [2012,393,223,22,1075,16.4],[2013,396,234,22,1090,16.4],[2014,398,245,23,1080,16.5],
+    [2015,400,257,24,1065,16.7],[2016,403,269,25,1055,16.9],[2017,405,282,25,1070,16.8],
+    [2018,407,295,26,1060,16.9],[2019,409,309,27,1045,17.0],[2020,412,323,28,1035,17.2],
+    [2021,414,338,29,1025,17.2],[2022,417,353,30,1015,17.3],[2023,420,369,31,1005,17.5]
+  ];
+  rows = base.map(r => [...r]);
+  renderTable();
+  document.getElementById('guide-section').style.display = 'none';
+}
+
+function downloadCSV() {
+  if (!rows.length) return alert('데이터가 없습니다');
+  const lines = [columns.join(','), ...rows.map(r => r.join(','))];
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(lines.join('\n'));
+  a.download = 'regression_data.csv'; a.click();
+}
+
+function uploadCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split(/\r?\n/);
+    columns = lines[0].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    rows = lines.slice(1).filter(l => l.trim()).map(line =>
+      line.split(',').map(v => parseFloat(v.trim()) || 0)
+    );
+    renderTable();
+    document.getElementById('guide-section').style.display = 'none';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ══════════════════════════════════════════
+// 테이블 렌더링
+// ══════════════════════════════════════════
+function renderTable() {
+  targetIdx = columns.length - 1;
+  const head = document.getElementById('table-head');
+  const body = document.getElementById('table-body');
+
+  head.innerHTML = `<tr>
+    <th style="width:30px">#</th>
+    ${columns.map((c, ci) => `
+      <th class="${ci === targetIdx ? 'target-head' : ''}">
+        ${c}${ci === targetIdx ? ' ★' : ''}
+        ${ci > 0 && ci !== targetIdx ? `<button class="col-del-btn" onclick="deleteColumn(${ci})" title="컬럼 삭제">✕</button>` : ''}
+      </th>`).join('')}
+    <th style="width:28px"></th>
+  </tr>`;
+
+  body.innerHTML = rows.map((row, ri) => `
+    <tr>
+      <td style="color:#bbb;font-size:11px">${ri + 1}</td>
+      ${row.map((v, ci) => `
+        <td><input type="number" value="${v}" step="any"
+          oninput="rows[${ri}][${ci}]=parseFloat(this.value)||0"
+          style="${ci === targetIdx ? 'background:#f8fff4;' : ''}"></td>`).join('')}
+      <td><button class="del-row-btn" onclick="deleteRow(${ri})"><i class="ti ti-x"></i></button></td>
+    </tr>`).join('');
+
+  document.getElementById('data-badge').textContent = `${rows.length}행 × ${columns.length}컬럼`;
+}
+
+function addRow() {
+  if (!columns.length) { columns = ['연도', '평균기온(°C)']; }
+  rows.push(new Array(columns.length).fill(0));
+  renderTable();
+}
+
+function deleteRow(ri) { rows.splice(ri, 1); renderTable(); }
+
+function toggleAddCol() {
+  const f = document.getElementById('add-col-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('new-col-name').focus();
+}
+
+function addColumn() {
+  const name = document.getElementById('new-col-name').value.trim();
+  if (!name) return;
+  // 새 컬럼을 target(마지막) 앞에 삽입
+  const insertAt = columns.length - 1;
+  columns.splice(insertAt, 0, name);
+  rows.forEach(r => r.splice(insertAt, 0, 0));
+  document.getElementById('new-col-name').value = '';
+  toggleAddCol();
+  renderTable();
+}
+
+function deleteColumn(ci) {
+  if (columns.length <= 2) return alert('최소 2개 컬럼이 필요합니다');
+  columns.splice(ci, 1);
+  rows.forEach(r => r.splice(ci, 1));
+  renderTable();
+}
+
+function clearAllData() {
+  if (!confirm('전체 데이터를 삭제할까요?')) return;
+  rows = []; renderTable();
+}
+
+function selectModel(radio) {
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+  radio.closest('.model-card').classList.add('selected');
+}
+
+// ══════════════════════════════════════════
+// 전처리
+// ══════════════════════════════════════════
+function getXY() {
+  targetIdx = columns.length - 1;
+  const X = rows.map(r => r.slice(0, targetIdx));
+  const y = rows.map(r => r[targetIdx]);
+  return { X, y };
+}
+
+function normalize(X, y) {
+  const nF = X[0].length;
+  featureMean = Array.from({ length: nF }, (_, fi) => {
+    const v = X.map(r => r[fi]); return v.reduce((a, b) => a + b, 0) / v.length;
+  });
+  featureStd = Array.from({ length: nF }, (_, fi) => {
+    const v = X.map(r => r[fi]); const m = featureMean[fi];
+    return Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
+  });
+  targetMean = y.reduce((a, b) => a + b, 0) / y.length;
+  targetStd = Math.sqrt(y.reduce((a, b) => a + (b - targetMean) ** 2, 0) / y.length) || 1;
+  const Xn = X.map(r => r.map((v, fi) => (v - featureMean[fi]) / featureStd[fi]));
+  const yn = y.map(v => (v - targetMean) / targetStd);
+  return { Xn, yn };
+}
+
+function normX(x) { return x.map((v, fi) => (v - featureMean[fi]) / featureStd[fi]); }
+function denormY(v) { return v * targetStd + targetMean; }
+
+// ══════════════════════════════════════════
+// 학습 진입점
+// ══════════════════════════════════════════
+async function trainModel() {
+  if (rows.length < 3) return alert('최소 3행 이상의 데이터가 필요합니다');
+  const type = document.querySelector('input[name=reg]:checked').value;
+  document.getElementById('train-btn').disabled = true;
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = '5%'; setInfo('데이터 준비 중...'); await tick();
+
+  const { X, y } = getXY();
+  const { Xn, yn } = normalize(X, y);
+  trainedType = type; fill.style.width = '20%'; await tick();
+
+  const t0 = performance.now();
+  if (type === 'lr')    trainedModel = trainLR(Xn, yn);
+  else if (type === 'ridge') trainedModel = trainRidge(Xn, yn, 0.1);
+  else if (type === 'poly')  trainedModel = trainPoly(Xn, yn);
+  else if (type === 'dt')    trainedModel = trainDT(Xn, yn);
+  else if (type === 'rf')  { setInfo('랜덤 포레스트 학습 중...'); await tick(); trainedModel = await trainRF(Xn, yn, fill); }
+
+  // 훈련 성능 평가
+  const preds = Xn.map(x => predictOne(x));
+  const predsOrig = preds.map(denormY);
+  const rmse = Math.sqrt(y.reduce((s, v, i) => s + (v - predsOrig[i]) ** 2, 0) / y.length);
+  const mae = y.reduce((s, v, i) => s + Math.abs(v - predsOrig[i]), 0) / y.length;
+  const yMean = y.reduce((a, b) => a + b) / y.length;
+  const ssTot = y.reduce((s, v) => s + (v - yMean) ** 2, 0);
+  const ssRes = y.reduce((s, v, i) => s + (v - predsOrig[i]) ** 2, 0);
+  const r2 = Math.max(0, 1 - ssRes / ssTot);
+  const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+
+  fill.style.width = '100%'; trained = true;
+  document.getElementById('train-btn').disabled = false;
+  setInfo(`✅ 학습 완료 — R² ${r2.toFixed(4)} · RMSE ${rmse.toFixed(4)} · ${elapsed}초`);
+
+  showStats(r2, rmse, mae, y, predsOrig);
+  showTrendChart(y, predsOrig);
+  showPredSection();
+}
+
+function tick() { return new Promise(r => setTimeout(r, 10)); }
+function setInfo(t) { document.getElementById('train-info').textContent = t; }
+
+// ══════════════════════════════════════════
+// 1. 선형 회귀 (정규방정식 OLS)
+// ══════════════════════════════════════════
+function trainLR(X, y) {
+  // 바이어스 추가
+  const Xb = X.map(r => [1, ...r]);
+  const n = Xb.length, m = Xb[0].length;
+  // Xt * X
+  const XtX = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) =>
+    Xb.reduce((s, r) => s + r[i] * r[j], 0)
+  ));
+  // Xt * y
+  const Xty = Array.from({ length: m }, (_, i) => Xb.reduce((s, r, ri) => s + r[i] * y[ri], 0));
+  const w = solveLinear(XtX, Xty);
+  return { w, type: 'linear' };
+}
+
+// ══════════════════════════════════════════
+// 2. Ridge 회귀
+// ══════════════════════════════════════════
+function trainRidge(X, y, lambda = 0.1) {
+  const Xb = X.map(r => [1, ...r]);
+  const m = Xb[0].length;
+  const XtX = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) =>
+    Xb.reduce((s, r) => s + r[i] * r[j], 0) + (i === j && i > 0 ? lambda : 0)
+  ));
+  const Xty = Array.from({ length: m }, (_, i) => Xb.reduce((s, r, ri) => s + r[i] * y[ri], 0));
+  const w = solveLinear(XtX, Xty);
+  return { w, type: 'ridge' };
+}
+
+// 가우스 소거법
+function solveLinear(A, b) {
+  const n = b.length;
+  const M = A.map((r, i) => [...r, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let maxR = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[maxR][col])) maxR = r;
+    [M[col], M[maxR]] = [M[maxR], M[col]];
+    const piv = M[col][col];
+    if (Math.abs(piv) < 1e-12) continue;
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const f = M[r][col] / piv;
+      for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
+    }
+    for (let c = col; c <= n; c++) M[col][c] /= piv;
+  }
+  return M.map(r => r[n]);
+}
+
+function predictLinear(m, x) { const xb = [1, ...x]; return xb.reduce((s, v, i) => s + v * m.w[i], 0); }
+
+// ══════════════════════════════════════════
+// 3. 다항 회귀 (2차)
+// ══════════════════════════════════════════
+function polyFeatures(x) {
+  const feats = [1, ...x];
+  x.forEach(v => feats.push(v * v));
+  for (let i = 0; i < x.length; i++)
+    for (let j = i + 1; j < x.length; j++) feats.push(x[i] * x[j]);
+  return feats;
+}
+
+function trainPoly(X, y) {
+  const Xp = X.map(polyFeatures);
+  const m = Xp[0].length;
+  const XtX = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) =>
+    Xp.reduce((s, r) => s + r[i] * r[j], 0) + (i === j ? 1e-4 : 0)
+  ));
+  const Xty = Array.from({ length: m }, (_, i) => Xp.reduce((s, r, ri) => s + r[i] * y[ri], 0));
+  const w = solveLinear(XtX, Xty);
+  return { w, type: 'poly' };
+}
+
+function predictPoly(m, x) { return polyFeatures(x).reduce((s, v, i) => s + v * m.w[i], 0); }
+
+// ══════════════════════════════════════════
+// 4. 결정 트리 회귀 (분산 기준)
+// ══════════════════════════════════════════
+function variance(arr) {
+  if (!arr.length) return 0;
+  const m = arr.reduce((a, b) => a + b, 0) / arr.length;
+  return arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length;
+}
+
+function buildRegTree(X, y, depth = 0, maxD = 8, minLeaf = 3) {
+  const n = y.length;
+  const mean = y.reduce((a, b) => a + b, 0) / n;
+  if (depth >= maxD || n <= minLeaf) return { leaf: true, val: mean };
+
+  let bestVar = Infinity, bestF = -1, bestT = 0;
+  for (let fi = 0; fi < X[0].length; fi++) {
+    const vals = [...new Set(X.map(x => x[fi]))].sort((a, b) => a - b);
+    for (let vi = 0; vi < vals.length - 1; vi++) {
+      const t = (vals[vi] + vals[vi + 1]) / 2;
+      const lY = [], rY = [];
+      X.forEach((x, i) => (x[fi] <= t ? lY : rY).push(y[i]));
+      if (!lY.length || !rY.length) continue;
+      const impurity = (lY.length / n) * variance(lY) + (rY.length / n) * variance(rY);
+      if (impurity < bestVar) { bestVar = impurity; bestF = fi; bestT = t; }
+    }
+  }
+  if (bestF === -1) return { leaf: true, val: mean };
+  const lX = [], lY = [], rX = [], rY = [];
+  X.forEach((x, i) => { if (x[bestF] <= bestT) { lX.push(x); lY.push(y[i]); } else { rX.push(x); rY.push(y[i]); } });
+  return { leaf: false, feat: bestF, thresh: bestT,
+    left: buildRegTree(lX, lY, depth + 1, maxD, minLeaf),
+    right: buildRegTree(rX, rY, depth + 1, maxD, minLeaf) };
+}
+
+function trainDT(X, y) { return { tree: buildRegTree(X, y), type: 'dt' }; }
+
+function predictDT(m, x) {
+  let node = m.tree;
+  while (!node.leaf) node = x[node.feat] <= node.thresh ? node.left : node.right;
+  return node.val;
+}
+
+// ══════════════════════════════════════════
+// 5. 랜덤 포레스트 회귀
+// ══════════════════════════════════════════
+function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+async function trainRF(X, y, fill) {
+  const nT = 50, maxD = 7, nF = X[0].length, sqF = Math.max(1, Math.round(Math.sqrt(nF)));
+  const trees = [];
+  for (let t = 0; t < nT; t++) {
+    const idx = Array.from({ length: X.length }, () => Math.floor(Math.random() * X.length));
+    const bX = idx.map(i => X[i]), bY = idx.map(i => y[i]);
+    const fIdx = shuffle([...Array(nF).keys()]).slice(0, sqF);
+    const subX = bX.map(x => fIdx.map(fi => x[fi]));
+    trees.push({ tree: buildRegTree(subX, bY, 0, maxD), fIdx });
+    if (t % 10 === 9) { fill.style.width = (20 + Math.round((t / nT) * 70)) + '%'; await tick(); }
+  }
+  return { trees, type: 'rf' };
+}
+
+function predictRF(m, x) {
+  const preds = m.trees.map(({ tree, fIdx }) => predictDT({ tree }, fIdx.map(fi => x[fi])));
+  return preds.reduce((a, b) => a + b, 0) / preds.length;
+}
+
+// ══════════════════════════════════════════
+// 예측 라우터
+// ══════════════════════════════════════════
+function predictOne(x) {
+  if (trainedType === 'lr' || trainedType === 'ridge') return predictLinear(trainedModel, x);
+  if (trainedType === 'poly') return predictPoly(trainedModel, x);
+  if (trainedType === 'dt')   return predictDT(trainedModel, x);
+  if (trainedType === 'rf')   return predictRF(trainedModel, x);
+  return 0;
+}
+
+// ══════════════════════════════════════════
+// 예측 UI
+// ══════════════════════════════════════════
+function showPredSection() {
+  document.getElementById('pred-section').style.display = 'block';
+  const featCols = columns.slice(0, targetIdx);
+  const lastRow = rows[rows.length - 1] || [];
+  document.getElementById('pred-inputs').innerHTML = featCols.map((c, i) => `
+    <div class="pred-group">
+      <label>${c}</label>
+      <input type="number" id="pi-${i}" value="${lastRow[i] !== undefined ? lastRow[i] : ''}" step="any" placeholder="값 입력">
+    </div>`).join('');
+  const names = { lr: '선형 회귀', ridge: 'Ridge 회귀', poly: '다항 회귀 (2차)', dt: '결정 트리', rf: '랜덤 포레스트' };
+  document.getElementById('pred-model-badge').textContent = `[${names[trainedType]}]`;
+}
+
+function predict() {
+  if (!trained) return;
+  const featCols = columns.slice(0, targetIdx);
+  const inputs = featCols.map((_, i) => parseFloat(document.getElementById(`pi-${i}`).value) || 0);
+  const norm = normX(inputs);
+  const predNorm = predictOne(norm);
+  const predOrig = denormY(predNorm);
+
+  document.getElementById('result-card').style.display = 'block';
+  document.getElementById('result-label-text').textContent = `예측값 (${columns[targetIdx]})`;
+  document.getElementById('result-val').textContent = predOrig.toFixed(4);
+  document.getElementById('result-unit').textContent = columns[targetIdx];
+  const names = { lr: '선형 회귀', ridge: 'Ridge 회귀', poly: '다항 회귀 (2차)', dt: '결정 트리', rf: '랜덤 포레스트' };
+  document.getElementById('result-model').textContent = `모델: ${names[trainedType]}`;
+}
+
+// ══════════════════════════════════════════
+// 통계 & 차트
+// ══════════════════════════════════════════
+function showStats(r2, rmse, mae, y, preds) {
+  document.getElementById('stats-section').style.display = 'block';
+  document.getElementById('guide-section').style.display = 'none';
+  document.getElementById('perf-stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${r2.toFixed(4)}</div><div class="stat-label">R² (결정계수)</div></div>
+    <div class="stat"><div class="stat-val">${rmse.toFixed(4)}</div><div class="stat-label">RMSE</div></div>
+    <div class="stat"><div class="stat-val">${mae.toFixed(4)}</div><div class="stat-label">MAE</div></div>`;
+
+  // 산점도: 실제 vs 예측
+  if (scatterChart) scatterChart.destroy();
+  const ctx = document.getElementById('scatter-chart').getContext('2d');
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: '실제 vs 예측',
+        data: y.map((v, i) => ({ x: v, y: preds[i] })),
+        backgroundColor: 'rgba(55,138,221,0.5)',
+        pointRadius: 4
+      }, {
+        label: '이상적 예측선',
+        data: [{ x: Math.min(...y), y: Math.min(...y) }, { x: Math.max(...y), y: Math.max(...y) }],
+        type: 'line', borderColor: '#e24b4a', borderDash: [4, 4], pointRadius: 0, borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 } } } },
+      scales: {
+        x: { title: { display: true, text: '실제값', font: { size: 11 } } },
+        y: { title: { display: true, text: '예측값', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function showTrendChart(y, preds) {
+  document.getElementById('trend-section').style.display = 'block';
+  if (trendChart) trendChart.destroy();
+  const labels = columns[0] === '연도'
+    ? rows.map(r => r[0])
+    : rows.map((_, i) => i + 1);
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: `실제 ${columns[targetIdx]}`, data: y, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,0.08)', tension: 0.3, pointRadius: 3, borderWidth: 2 },
+        { label: `예측 ${columns[targetIdx]}`, data: preds, borderColor: '#D4537E', backgroundColor: 'rgba(212,83,126,0.08)', tension: 0.3, pointRadius: 3, borderWidth: 2, borderDash: [5, 3] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 } } } },
+      scales: {
+        x: { title: { display: true, text: columns[0], font: { size: 11 } } },
+        y: { title: { display: true, text: columns[targetIdx], font: { size: 11 } } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
