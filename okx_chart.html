@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OKX 실시간 차트</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0d12;--bg2:#13131a;--bg3:#1a1a24;--border:#2a2a38;--text:#e8e8f0;--text2:#888899;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--accent:#7c3aed}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+
+/* 헤더 */
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:.75rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.logo{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.logo span{color:var(--blue)}
+.tab-bar{display:flex;gap:4px;margin-left:auto}
+.tab{padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.tab.active,.tab:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.interval-bar{display:flex;gap:3px}
+.iv-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.iv-btn.active,.iv-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* 메인 */
+.main{display:grid;grid-template-columns:1fr 240px;gap:0;height:calc(100vh - 57px)}
+@media(max-width:720px){.main{grid-template-columns:1fr;height:auto}}
+
+/* 차트 영역 */
+.chart-area{display:flex;flex-direction:column;padding:1rem;gap:1rem;overflow-y:auto}
+.price-header{display:flex;align-items:flex-start;gap:1.5rem;flex-wrap:wrap}
+.price-block{display:flex;flex-direction:column;gap:2px}
+.symbol-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
+.current-price{font-size:28px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;transition:color .3s}
+.price-up{color:var(--green)}
+.price-down{color:var(--red)}
+.price-neutral{color:var(--text)}
+.change-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-top:2px}
+.badge-up{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-down{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* 패널 */
+.chart-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-head{display:flex;align-items:center;gap:8px;padding:.6rem 1rem;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2)}
+.panel-head i{font-size:14px}
+.chart-box{width:100%;position:relative}
+
+/* 사이드바 */
+.sidebar{background:var(--bg2);border-left:1px solid var(--border);padding:1rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto}
+.side-section{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.875rem}
+.side-title{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem}
+
+/* 통계 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-item{display:flex;flex-direction:column;gap:2px}
+.stat-label{font-size:10px;color:var(--text2)}
+.stat-val{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+
+/* 오더북 스타일 호가 */
+.book-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;font-variant-numeric:tabular-nums;position:relative;cursor:default}
+.book-row .bar{position:absolute;top:0;bottom:0;right:0;opacity:.15;border-radius:2px}
+.book-row.ask .bar{background:var(--red)}
+.book-row.bid .bar{background:var(--green)}
+.book-price.ask{color:var(--red)}
+.book-price.bid{color:var(--green)}
+.book-size{color:var(--text2)}
+.book-mid{text-align:center;padding:4px 0;font-size:13px;font-weight:800;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:3px 0}
+
+/* 최근 체결 */
+.trade-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;font-variant-numeric:tabular-nums}
+.trade-price.up{color:var(--green)}
+.trade-price.dn{color:var(--red)}
+.trade-time{color:var(--text2);font-size:10px}
+
+/* 로딩 */
+.loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg2);z-index:10;border-radius:12px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.update-time{font-size:10px;color:var(--text2);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">OKX <span>Live</span></div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchSymbol('BTC-USDT',this)">₿ BTC/USDT</button>
+    <button class="tab" onclick="switchSymbol('ETH-USDT',this)">Ξ ETH/USDT</button>
+  </div>
+  <div class="interval-bar">
+    <button class="iv-btn" onclick="switchInterval('5m',this)">5분</button>
+    <button class="iv-btn active" onclick="switchInterval('30m',this)">30분</button>
+    <button class="iv-btn" onclick="switchInterval('1H',this)">1시간</button>
+    <button class="iv-btn" onclick="switchInterval('4H',this)">4시간</button>
+    <button class="iv-btn" onclick="switchInterval('1D',this)">1일</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span class="update-time" id="update-time">연결 중...</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- 차트 영역 -->
+  <div class="chart-area">
+    <div class="price-header">
+      <div class="price-block">
+        <div class="symbol-label" id="sym-label">BTC/USDT</div>
+        <div class="current-price price-neutral" id="cur-price">—</div>
+        <div class="change-badge badge-up" id="change-badge">— —%</div>
+      </div>
+      <div class="stat-grid" style="flex:1;max-width:400px" id="header-stats">
+        <div class="stat-item"><div class="stat-label">24H 고가</div><div class="stat-val" id="h24-high">—</div></div>
+        <div class="stat-item"><div class="stat-label">24H 저가</div><div class="stat-val" id="h24-low">—</div></div>
+        <div class="stat-item"><div class="stat-label">24H 거래량</div><div class="stat-val" id="h24-vol">—</div></div>
+        <div class="stat-item"><div class="stat-label">24H 거래대금</div><div class="stat-val" id="h24-volccy">—</div></div>
+      </div>
+    </div>
+
+    <!-- 캔들 차트 -->
+    <div class="chart-panel">
+      <div class="panel-head">
+        🕯️ <span id="candle-title">캔들 차트 (30분봉 × 200)</span>
+      </div>
+      <div style="position:relative">
+        <div class="loading-overlay" id="candle-loading"><div class="spinner"></div></div>
+        <div id="candle-chart" class="chart-box" style="height:340px"></div>
+      </div>
+    </div>
+
+    <!-- 거래량 차트 -->
+    <div class="chart-panel">
+      <div class="panel-head">
+        📊 <span id="vol-title">거래량 차트 (30분봉 × 200)</span>
+      </div>
+      <div style="position:relative">
+        <div class="loading-overlay" id="vol-loading"><div class="spinner"></div></div>
+        <div id="vol-chart" class="chart-box" style="height:180px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사이드바 -->
+  <div class="sidebar">
+    <!-- 호가창 -->
+    <div class="side-section">
+      <div class="side-title">📋 호가창</div>
+      <div id="orderbook">
+        <div style="text-align:center;color:var(--text2);font-size:12px;padding:1rem">로딩 중...</div>
+      </div>
+    </div>
+
+    <!-- 최근 체결 -->
+    <div class="side-section">
+      <div class="side-title">⚡ 최근 체결</div>
+      <div id="recent-trades">
+        <div style="text-align:center;color:var(--text2);font-size:12px;padding:1rem">로딩 중...</div>
+      </div>
+    </div>
+
+    <!-- RSI 미니 -->
+    <div class="side-section">
+      <div class="side-title">📈 보조 지표</div>
+      <div class="stat-grid">
+        <div class="stat-item"><div class="stat-label">RSI(14)</div><div class="stat-val" id="ind-rsi">—</div></div>
+        <div class="stat-item"><div class="stat-label">MA(20)</div><div class="stat-val" id="ind-ma20">—</div></div>
+        <div class="stat-item"><div class="stat-label">MA(60)</div><div class="stat-val" id="ind-ma60">—</div></div>
+        <div class="stat-item"><div class="stat-label">추세</div><div class="stat-val" id="ind-trend">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 상태
+// ══════════════════════════════════════════
+const BASE = 'https://www.okx.com/api/v5';
+let curSymbol = 'BTC-USDT';
+let curInterval = '30m';
+let candleSeries, volSeries, maLine20, maLine60, candleChart, volChart;
+let prevPrice = 0;
+let priceTimer = null, bookTimer = null, candleTimer = null;
+let allCandles = [];
+
+// ══════════════════════════════════════════
+// OKX API
+// ══════════════════════════════════════════
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+// 현재가 + 24H 통계
+async function fetchTicker() {
+  const d = await fetchJSON(`${BASE}/market/ticker?instId=${curSymbol}`);
+  return d.data[0];
+}
+
+// 캔들 (최대 300개)
+async function fetchCandles(limit = 200) {
+  const d = await fetchJSON(`${BASE}/market/candles?instId=${curSymbol}&bar=${curInterval}&limit=${limit}`);
+  // [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
+  return d.data.reverse(); // 오래된 것 먼저
+}
+
+// 호가
+async function fetchOrderbook() {
+  const d = await fetchJSON(`${BASE}/market/books?instId=${curSymbol}&sz=8`);
+  return d.data[0];
+}
+
+// 최근 체결
+async function fetchTrades() {
+  const d = await fetchJSON(`${BASE}/market/trades?instId=${curSymbol}&limit=15`);
+  return d.data;
+}
+
+// ══════════════════════════════════════════
+// 차트 초기화
+// ══════════════════════════════════════════
+function initCharts() {
+  // 기존 차트 제거
+  if (candleChart) { candleChart.remove(); candleChart = null; }
+  if (volChart)    { volChart.remove(); volChart = null; }
+
+  const commonOpts = {
+    layout: { background: { color: '#13131a' }, textColor: '#888899' },
+    grid: { vertLines: { color: '#1a1a24' }, horzLines: { color: '#1a1a24' } },
+    crosshair: { mode: 1 },
+    rightPriceScale: { borderColor: '#2a2a38' },
+    timeScale: { borderColor: '#2a2a38', timeVisible: true, secondsVisible: false },
+    handleScroll: true,
+    handleScale: true,
+  };
+
+  // 캔들 차트
+  const cEl = document.getElementById('candle-chart');
+  candleChart = LightweightCharts.createChart(cEl, { ...commonOpts, height: 340, width: cEl.clientWidth });
+  candleSeries = candleChart.addCandlestickSeries({
+    upColor: '#22c55e', downColor: '#ef4444',
+    borderUpColor: '#22c55e', borderDownColor: '#ef4444',
+    wickUpColor: '#22c55e', wickDownColor: '#ef4444',
+  });
+  maLine20 = candleChart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  maLine60 = candleChart.addLineSeries({ color: '#7c3aed', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+  // 거래량 차트
+  const vEl = document.getElementById('vol-chart');
+  volChart = LightweightCharts.createChart(vEl, { ...commonOpts, height: 180, width: vEl.clientWidth });
+  volSeries = volChart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: '',
+  });
+  volChart.priceScale('').applyOptions({ scaleMargins: { top: 0.05, bottom: 0 } });
+
+  // 시간축 동기화
+  candleChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+    if (range) volChart.timeScale().setVisibleLogicalRange(range);
+  });
+  volChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+    if (range) candleChart.timeScale().setVisibleLogicalRange(range);
+  });
+
+  // 리사이즈
+  const ro = new ResizeObserver(() => {
+    if (candleChart) candleChart.applyOptions({ width: cEl.clientWidth });
+    if (volChart)    volChart.applyOptions({ width: vEl.clientWidth });
+  });
+  ro.observe(cEl); ro.observe(vEl);
+}
+
+// ══════════════════════════════════════════
+// 데이터 렌더
+// ══════════════════════════════════════════
+function renderCandles(candles) {
+  allCandles = candles;
+  const cData = candles.map(c => ({
+    time: Math.floor(Number(c[0]) / 1000),
+    open: parseFloat(c[1]),
+    high: parseFloat(c[2]),
+    low:  parseFloat(c[3]),
+    close: parseFloat(c[4]),
+  }));
+  const vData = candles.map(c => ({
+    time: Math.floor(Number(c[0]) / 1000),
+    value: parseFloat(c[5]),
+    color: parseFloat(c[4]) >= parseFloat(c[1]) ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)',
+  }));
+
+  candleSeries.setData(cData);
+  volSeries.setData(vData);
+
+  // MA 계산
+  const closes = cData.map(d => d.close);
+  const ma20 = calcMA(cData, closes, 20);
+  const ma60 = calcMA(cData, closes, 60);
+  maLine20.setData(ma20);
+  maLine60.setData(ma60);
+
+  candleChart.timeScale().fitContent();
+  volChart.timeScale().fitContent();
+
+  document.getElementById('candle-loading').style.display = 'none';
+  document.getElementById('vol-loading').style.display = 'none';
+
+  // 보조지표 업데이트
+  updateIndicators(closes);
+}
+
+function calcMA(cData, closes, period) {
+  const result = [];
+  for (let i = period - 1; i < closes.length; i++) {
+    const avg = closes.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+    result.push({ time: cData[i].time, value: avg });
+  }
+  return result;
+}
+
+function calcRSI(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = closes[i] - closes[i - 1];
+    if (diff > 0) gains += diff; else losses -= diff;
+  }
+  let avgGain = gains / period, avgLoss = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const diff = closes[i] - closes[i - 1];
+    avgGain = (avgGain * (period - 1) + Math.max(diff, 0)) / period;
+    avgLoss = (avgLoss * (period - 1) + Math.max(-diff, 0)) / period;
+  }
+  if (avgLoss === 0) return 100;
+  return 100 - 100 / (1 + avgGain / avgLoss);
+}
+
+function updateIndicators(closes) {
+  const last = closes[closes.length - 1];
+  const rsi = calcRSI(closes);
+  const ma20 = closes.length >= 20 ? closes.slice(-20).reduce((a, b) => a + b, 0) / 20 : null;
+  const ma60 = closes.length >= 60 ? closes.slice(-60).reduce((a, b) => a + b, 0) / 60 : null;
+
+  if (rsi !== null) {
+    const rsiEl = document.getElementById('ind-rsi');
+    rsiEl.textContent = rsi.toFixed(1);
+    rsiEl.style.color = rsi > 70 ? '#ef4444' : rsi < 30 ? '#22c55e' : '#e8e8f0';
+  }
+  if (ma20) document.getElementById('ind-ma20').textContent = fmtPrice(ma20);
+  if (ma60) document.getElementById('ind-ma60').textContent = fmtPrice(ma60);
+
+  const trend = document.getElementById('ind-trend');
+  if (ma20 && ma60) {
+    if (ma20 > ma60) { trend.textContent = '🟢 상승'; trend.style.color = '#22c55e'; }
+    else             { trend.textContent = '🔴 하락'; trend.style.color = '#ef4444'; }
+  }
+}
+
+// 최신 캔들 업데이트 (실시간)
+function updateLatestCandle(price) {
+  if (!allCandles.length) return;
+  const last = allCandles[allCandles.length - 1];
+  const time = Math.floor(Number(last[0]) / 1000);
+  const open  = parseFloat(last[1]);
+  const high  = Math.max(parseFloat(last[2]), price);
+  const low   = Math.min(parseFloat(last[3]), price);
+  candleSeries.update({ time, open, high, low, close: price });
+}
+
+// ══════════════════════════════════════════
+// 현재가 업데이트
+// ══════════════════════════════════════════
+async function updateTicker() {
+  try {
+    const t = await fetchTicker();
+    const price = parseFloat(t.last);
+    const open24 = parseFloat(t.open24h);
+    const chg = price - open24;
+    const chgPct = (chg / open24) * 100;
+    const isUp = chg >= 0;
+
+    const priceEl = document.getElementById('cur-price');
+    priceEl.textContent = fmtPrice(price);
+    priceEl.className = 'current-price ' + (price > prevPrice ? 'price-up' : price < prevPrice ? 'price-down' : 'price-neutral');
+    setTimeout(() => priceEl.className = 'current-price ' + (isUp ? 'price-up' : 'price-down'), 600);
+
+    const badge = document.getElementById('change-badge');
+    badge.textContent = `${isUp ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)} (${chgPct >= 0 ? '+' : ''}${chgPct.toFixed(2)}%)`;
+    badge.className = 'change-badge ' + (isUp ? 'badge-up' : 'badge-down');
+
+    document.getElementById('h24-high').textContent = fmtPrice(parseFloat(t.high24h));
+    document.getElementById('h24-low').textContent  = fmtPrice(parseFloat(t.low24h));
+    document.getElementById('h24-vol').textContent  = fmtVol(parseFloat(t.vol24h));
+    document.getElementById('h24-volccy').textContent = fmtUSD(parseFloat(t.volCcy24h));
+
+    document.getElementById('update-time').textContent = '⬤ ' + new Date().toLocaleTimeString('ko-KR');
+
+    if (prevPrice !== 0) updateLatestCandle(price);
+    prevPrice = price;
+  } catch(e) {
+    document.getElementById('update-time').textContent = '연결 오류';
+  }
+}
+
+// ══════════════════════════════════════════
+// 호가창
+// ══════════════════════════════════════════
+async function updateOrderbook() {
+  try {
+    const ob = await fetchOrderbook();
+    const asks = ob.asks.slice(0, 7).reverse(); // 낮은 매도가 먼저
+    const bids = ob.bids.slice(0, 7);
+    const mid = (parseFloat(asks[asks.length - 1][0]) + parseFloat(bids[0][0])) / 2;
+
+    const maxAsk = Math.max(...asks.map(a => parseFloat(a[1])));
+    const maxBid = Math.max(...bids.map(b => parseFloat(b[1])));
+    const maxVol = Math.max(maxAsk, maxBid);
+
+    let html = '';
+    asks.forEach(a => {
+      const pct = (parseFloat(a[1]) / maxVol * 100).toFixed(0);
+      html += `<div class="book-row ask">
+        <span class="book-price ask">${fmtPrice(parseFloat(a[0]))}</span>
+        <span class="book-size">${parseFloat(a[1]).toFixed(4)}</span>
+        <div class="bar" style="width:${pct}%"></div>
+      </div>`;
+    });
+
+    const isUp = parseFloat(bids[0][0]) >= (prevPrice || parseFloat(bids[0][0]));
+    html += `<div class="book-mid" style="color:${isUp ? '#22c55e' : '#ef4444'}">${fmtPrice(mid)}</div>`;
+
+    bids.forEach(b => {
+      const pct = (parseFloat(b[1]) / maxVol * 100).toFixed(0);
+      html += `<div class="book-row bid">
+        <span class="book-price bid">${fmtPrice(parseFloat(b[0]))}</span>
+        <span class="book-size">${parseFloat(b[1]).toFixed(4)}</span>
+        <div class="bar" style="width:${pct}%"></div>
+      </div>`;
+    });
+
+    document.getElementById('orderbook').innerHTML = html;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// 최근 체결
+// ══════════════════════════════════════════
+async function updateTrades() {
+  try {
+    const trades = await fetchTrades();
+    const html = trades.map(t => {
+      const ts = new Date(Number(t.ts));
+      const hh = ts.getHours().toString().padStart(2,'0');
+      const mm = ts.getMinutes().toString().padStart(2,'0');
+      const ss = ts.getSeconds().toString().padStart(2,'0');
+      return `<div class="trade-row">
+        <span class="trade-price ${t.side === 'buy' ? 'up' : 'dn'}">${fmtPrice(parseFloat(t.px))}</span>
+        <span style="color:var(--text2)">${parseFloat(t.sz).toFixed(4)}</span>
+        <span class="trade-time">${hh}:${mm}:${ss}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('recent-trades').innerHTML = html;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+// 포맷터
+// ══════════════════════════════════════════
+function fmtPrice(v) {
+  if (v >= 1000) return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+function fmtVol(v) {
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(2) + 'K';
+  return v.toFixed(2);
+}
+function fmtUSD(v) {
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  return '$' + v.toFixed(0);
+}
+
+// ══════════════════════════════════════════
+// 심볼 / 인터벌 전환
+// ══════════════════════════════════════════
+function switchSymbol(sym, btn) {
+  if (sym === curSymbol) return;
+  curSymbol = sym;
+  prevPrice = 0;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sym-label').textContent = sym.replace('-', '/');
+  document.getElementById('cur-price').textContent = '—';
+  document.getElementById('candle-loading').style.display = 'flex';
+  document.getElementById('vol-loading').style.display = 'flex';
+  loadCandles();
+}
+
+function switchInterval(iv, btn) {
+  if (iv === curInterval) return;
+  curInterval = iv;
+  document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const labelMap = {'5m':'5분봉','30m':'30분봉','1H':'1시간봉','4H':'4시간봉','1D':'일봉'};
+  const lbl = labelMap[iv] || iv;
+  document.getElementById('candle-title').textContent = `캔들 차트 (${lbl} × 200)`;
+  document.getElementById('vol-title').textContent = `거래량 차트 (${lbl} × 200)`;
+  document.getElementById('candle-loading').style.display = 'flex';
+  document.getElementById('vol-loading').style.display = 'flex';
+  loadCandles();
+}
+
+async function loadCandles() {
+  try {
+    const candles = await fetchCandles(200);
+    renderCandles(candles);
+  } catch(e) {
+    document.getElementById('candle-loading').style.display = 'none';
+    document.getElementById('vol-loading').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════
+// 타이머 관리
+// ══════════════════════════════════════════
+function startTimers() {
+  clearAllTimers();
+  updateTicker();
+  updateOrderbook();
+  updateTrades();
+  priceTimer  = setInterval(updateTicker,    3000);
+  bookTimer   = setInterval(updateOrderbook, 2000);
+  candleTimer = setInterval(() => { updateTrades(); }, 5000);
+  // 캔들은 30초마다 새로 로드
+  setInterval(loadCandles, 30000);
+}
+
+function clearAllTimers() {
+  clearInterval(priceTimer);
+  clearInterval(bookTimer);
+  clearInterval(candleTimer);
+}
+
+// ══════════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  loadCandles();
+  startTimers();
+});
+
+window.addEventListener('resize', () => {
+  const cEl = document.getElementById('candle-chart');
+  const vEl = document.getElementById('vol-chart');
+  if (candleChart) candleChart.applyOptions({ width: cEl.clientWidth });
+  if (volChart)    volChart.applyOptions({ width: vEl.clientWidth });
+});
+</script>
+</body>
+</html>
