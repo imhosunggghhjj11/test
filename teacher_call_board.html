@@ -1,0 +1,135 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1.5rem 1rem}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:12px}
+.title{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.voice-toggle{display:flex;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);overflow:hidden}
+.voice-btn{padding:6px 14px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--color-text-secondary);transition:all .15s}
+.voice-btn.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500}
+.add-area{display:flex;gap:8px;margin-bottom:1.25rem}
+.add-area input{flex:1;padding:8px 12px;font-size:14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none}
+.add-area input:focus{border-color:var(--color-border-primary)}
+.add-btn{padding:8px 16px;font-size:14px;cursor:pointer;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);color:var(--color-text-primary);white-space:nowrap;transition:all .15s}
+.add-btn:hover{background:var(--color-background-tertiary)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.teacher-card{position:relative;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem 1rem 1rem;cursor:pointer;transition:all .15s;text-align:center;user-select:none}
+.teacher-card:hover{border-color:var(--color-border-secondary);background:var(--color-background-secondary)}
+.teacher-card:active{transform:scale(0.97)}
+.teacher-card.calling{border-color:#185FA5;background:#E6F1FB;animation:pulse 0.6s ease}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+.teacher-card .avatar{width:44px;height:44px;border-radius:50%;background:var(--color-background-info,#E6F1FB);display:flex;align-items:center;justify-content:center;font-size:18px;margin:0 auto 10px;color:#185FA5}
+.teacher-card .name{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.delete-btn{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:none;background:transparent;cursor:pointer;color:var(--color-text-tertiary);font-size:16px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+.teacher-card:hover .delete-btn{opacity:1}
+.delete-btn:hover{color:var(--color-text-danger,#A32D2D);background:var(--color-background-danger,#FCEBEB)}
+.status{margin-top:1.25rem;padding:10px 14px;border-radius:var(--border-radius-md);font-size:14px;color:var(--color-text-secondary);background:var(--color-background-secondary);min-height:38px;transition:all .3s}
+.status.active{color:#185FA5;background:#E6F1FB;font-weight:500}
+.empty{text-align:center;color:var(--color-text-tertiary);font-size:14px;padding:2rem 0}
+</style>
+<div class="wrap">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">선생님 호출 보드 — 선생님 이름 버튼을 누르면 음성 안내가 재생됩니다</h2>
+  <div class="header">
+    <span class="title"><i class="ti ti-speakerphone" aria-hidden="true" style="font-size:20px;vertical-align:-3px;margin-right:6px"></i>선생님 호출 보드</span>
+    <div class="controls">
+      <span style="font-size:13px;color:var(--color-text-secondary)">목소리</span>
+      <div class="voice-toggle">
+        <button class="voice-btn active" id="btn-female" onclick="setVoice('female')"><i class="ti ti-gender-female" aria-hidden="true"></i> 여성</button>
+        <button class="voice-btn" id="btn-male" onclick="setVoice('male')"><i class="ti ti-gender-male" aria-hidden="true"></i> 남성</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="add-area">
+    <input id="name-input" type="text" placeholder="선생님 이름 입력" maxlength="10" onkeydown="if(event.key==='Enter')addTeacher()">
+    <button class="add-btn" onclick="addTeacher()"><i class="ti ti-plus" aria-hidden="true"></i> 추가</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="status" id="status"><i class="ti ti-info-circle" aria-hidden="true" style="margin-right:6px"></i>선생님 버튼을 누르면 음성이 재생됩니다</div>
+</div>
+
+<script>
+let teachers = ['김철수','이영희','박민준','최수진','정우성'];
+let voiceMode = 'female';
+let speaking = false;
+
+function setVoice(mode){
+  voiceMode = mode;
+  document.getElementById('btn-female').classList.toggle('active', mode==='female');
+  document.getElementById('btn-male').classList.toggle('active', mode==='male');
+}
+
+function addTeacher(){
+  const inp = document.getElementById('name-input');
+  const name = inp.value.trim();
+  if(!name) return;
+  if(teachers.includes(name)){alert('이미 있는 선생님입니다.');return;}
+  teachers.push(name);
+  inp.value='';
+  render();
+}
+
+function deleteTeacher(name,e){
+  e.stopPropagation();
+  if(confirm(`"${name}" 선생님을 삭제할까요?`)){
+    teachers = teachers.filter(t=>t!==name);
+    render();
+  }
+}
+
+function callTeacher(name,cardEl){
+  if(speaking){window.speechSynthesis.cancel();}
+  speaking = true;
+  const text = `${name} 선생님, 학생이 찾습니다.`;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ko-KR';
+  utter.rate = 0.95;
+  utter.pitch = voiceMode==='female' ? 1.15 : 0.8;
+  utter.volume = 1;
+
+  const voices = window.speechSynthesis.getVoices();
+  const koVoices = voices.filter(v=>v.lang.startsWith('ko'));
+  if(koVoices.length){
+    let pick = null;
+    if(voiceMode==='female') pick = koVoices.find(v=>/female|woman|여|heami|seoyeon|yuna/i.test(v.name)) || koVoices[0];
+    else pick = koVoices.find(v=>/male|man|남|junho|jinho/i.test(v.name)) || koVoices[koVoices.length-1];
+    if(pick) utter.voice = pick;
+  }
+
+  document.querySelectorAll('.teacher-card').forEach(c=>c.classList.remove('calling'));
+  cardEl.classList.add('calling');
+  const status = document.getElementById('status');
+  status.className='status active';
+  status.innerHTML=`<i class="ti ti-volume" aria-hidden="true" style="margin-right:6px"></i>${text}`;
+
+  utter.onend = ()=>{
+    speaking = false;
+    cardEl.classList.remove('calling');
+    status.className='status';
+    status.innerHTML='<i class="ti ti-info-circle" aria-hidden="true" style="margin-right:6px"></i>선생님 버튼을 누르면 음성이 재생됩니다';
+  };
+  window.speechSynthesis.speak(utter);
+}
+
+function render(){
+  const grid = document.getElementById('grid');
+  if(!teachers.length){
+    grid.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="ti ti-user-off" style="font-size:32px;display:block;margin-bottom:8px"></i>선생님을 추가해주세요</div>';
+    return;
+  }
+  grid.innerHTML = teachers.map(name=>{
+    const initials = name.slice(0,1);
+    return `<div class="teacher-card" onclick="callTeacher('${name}',this)" role="button" aria-label="${name} 선생님 호출">
+      <button class="delete-btn" onclick="deleteTeacher('${name}',event)" aria-label="${name} 삭제"><i class="ti ti-x"></i></button>
+      <div class="avatar">${initials}</div>
+      <div class="name">${name} 선생님</div>
+    </div>`;
+  }).join('');
+}
+
+window.speechSynthesis.onvoiceschanged = ()=>{};
+render();
+</script>
