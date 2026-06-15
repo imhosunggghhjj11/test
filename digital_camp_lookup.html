@@ -1,0 +1,234 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.wrap { padding: 1.25rem 0; }
+.search-box { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+.search-box input { flex: 1; }
+.result-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.student-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--color-background-info); display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 13px; color: var(--color-text-info); flex-shrink: 0; }
+.student-name { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+.student-id { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+.course-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 0.5px solid var(--color-border-tertiary); }
+.time-badge { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: var(--border-radius-md); min-width: 36px; text-align: center; }
+.am-badge { background: #E6F1FB; color: #0C447C; }
+.pm-badge { background: #EAF3DE; color: #27500A; }
+.course-name { font-size: 14px; color: var(--color-text-primary); }
+.class-header { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 12px; }
+.class-count { font-size: 13px; color: var(--color-text-secondary); font-weight: 400; margin-left: 6px; }
+.class-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.class-table th { text-align: left; color: var(--color-text-secondary); font-weight: 400; padding: 4px 8px 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.class-table td { padding: 7px 8px 7px 0; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: top; }
+.class-table tr:last-child td { border-bottom: none; }
+.hint { font-size: 13px; color: var(--color-text-tertiary); margin-bottom: 1rem; }
+.empty { font-size: 14px; color: var(--color-text-secondary); padding: 0.5rem 0; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+.tag { font-size: 12px; padding: 3px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-secondary); transition: background 0.1s; }
+.tag:hover { background: var(--color-background-info); color: var(--color-text-info); border-color: transparent; }
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">디지털 캠프 수강 조회 — 이름 또는 학반으로 검색</h2>
+
+  <div class="search-box">
+    <input type="text" id="q" placeholder="이름 또는 학반 입력 (예: 김주훈, 1-1, 2반)" />
+    <button onclick="search()"><i class="ti ti-search" aria-hidden="true"></i> 검색</button>
+  </div>
+  <p class="hint">학반 입력 예시: 1-3, 2학년4반, 3-6 등 / 이름: 두 글자 이상 입력</p>
+
+  <div class="tag-row" id="tags"></div>
+  <div id="result"></div>
+</div>
+
+<script>
+const RAW = [
+  ["1104","김주훈","생성형AI","머신러닝/컴퓨터비전"],
+  ["1114","윤예준","디지털포트폴리오","생성형AI"],
+  ["1119","진준호","생성형AI","머신러닝/컴퓨터비전"],
+  ["1121","허영환","마이크로비트","생성형AI"],
+  ["1122","홍우진","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["1214","오지원","생성형AI","머신러닝/컴퓨터비전"],
+  ["1220","장석원","마이크로비트","자율주행로봇"],
+  ["1303","고대현","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["1305","김민준","자율주행로봇","생성형AI"],
+  ["1311","박민세","머신러닝/컴퓨터비전","디지털포트폴리오"],
+  ["1316","엄영균","마이크로비트","자율주행로봇"],
+  ["1322","주유찬","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["1410","신강민","머신러닝/컴퓨터비전","디지털포트폴리오"],
+  ["1412","윤찬웅","자율주행로봇","생성형AI"],
+  ["1416","이지훈","디지털포트폴리오","생성형AI"],
+  ["1420","조영승","자율주행로봇","생성형AI"],
+  ["1501","김건호","생성형AI","머신러닝/컴퓨터비전"],
+  ["1504","김시훈","생성형AI","자율주행로봇"],
+  ["1511","박준서","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["1514","변승수","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["1518","이상원","생성형AI","머신러닝/컴퓨터비전"],
+  ["1522","차준후","생성형AI","머신러닝/컴퓨터비전"],
+  ["1609","박건우","자율주행로봇","디지털포트폴리오"],
+  ["1616","이영훈","자율주행로봇","디지털포트폴리오"],
+  ["1619","조준영","자율주행로봇","디지털포트폴리오"],
+  ["2102","구준서","디지털포트폴리오","머신러닝/컴퓨터비전"],
+  ["2104","김민재","디지털포트폴리오","머신러닝/컴퓨터비전"],
+  ["2108","김종담","자율주행로봇","생성형AI"],
+  ["2109","김한재","자율주행로봇","생성형AI"],
+  ["2116","안용호","디지털포트폴리오","마이크로비트"],
+  ["2120","이지성","생성형AI","디지털포트폴리오"],
+  ["2209","김범준","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2211","박경빈","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2212","박지성","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2215","유현준","마이크로비트","생성형AI"],
+  ["2219","이현우","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2303","강민규","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2304","김강희","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["2312","백인수","디지털포트폴리오","마이크로비트"],
+  ["2319","임준형","디지털포트폴리오","마이크로비트"],
+  ["2324","홍윤우","생성형AI","디지털포트폴리오"],
+  ["2402","강민재","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["2408","박신우","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["2414","신민준","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["2415","신수민","자율주행로봇","마이크로비트"],
+  ["2421","전현수","디지털포트폴리오","마이크로비트"],
+  ["2423","조현우","마이크로비트","머신러닝/컴퓨터비전"],
+  ["2507","박지훈","마이크로비트","생성형AI"],
+  ["2508","배서현","마이크로비트","생성형AI"],
+  ["2509","배창민","마이크로비트","디지털포트폴리오"],
+  ["2513","이창민","생성형AI","디지털포트폴리오"],
+  ["2521","진성현","생성형AI","디지털포트폴리오"],
+  ["2523","허승연","생성형AI","자율주행로봇"],
+  ["2603","강두호","마이크로비트","생성형AI"],
+  ["2616","안태호","디지털포트폴리오","마이크로비트"],
+  ["2618","이찬섭","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["2620","정동욱","머신러닝/컴퓨터비전","생성형AI"],
+  ["2622","최시우","생성형AI","디지털포트폴리오"],
+  ["2624","최정환","생성형AI","디지털포트폴리오"],
+  ["3101","김동현","자율주행로봇","마이크로비트"],
+  ["3105","김우진","마이크로비트","자율주행로봇"],
+  ["3106","김정훈","디지털포트폴리오","생성형AI"],
+  ["3107","동준용","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["3110","박준수","디지털포트폴리오","마이크로비트"],
+  ["3113","유예상","디지털포트폴리오","생성형AI"],
+  ["3218","조재희","자율주행로봇","마이크로비트"],
+  ["3221","차윤호","생성형AI","디지털포트폴리오"],
+  ["3223","한민재","생성형AI","자율주행로봇"],
+  ["3307","김재영","마이크로비트","디지털포트폴리오"],
+  ["3309","문지윤","마이크로비트","머신러닝/컴퓨터비전"],
+  ["3322","지명준","생성형AI","디지털포트폴리오"],
+  ["3401","김민규","마이크로비트","머신러닝/컴퓨터비전"],
+  ["3402","김민제","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["3403","김민준","디지털포트폴리오","생성형AI"],
+  ["3405","김주환","생성형AI","마이크로비트"],
+  ["3409","도형륜","머신러닝/컴퓨터비전","마이크로비트"],
+  ["3410","배재현","디지털포트폴리오","생성형AI"],
+  ["3411","서준우","디지털포트폴리오","생성형AI"],
+  ["3422","최민성","머신러닝/컴퓨터비전","마이크로비트"],
+  ["3423","최원혁","머신러닝/컴퓨터비전","자율주행로봇"],
+  ["3505","김태왕","마이크로비트","머신러닝/컴퓨터비전"],
+  ["3506","박준석","마이크로비트","머신러닝/컴퓨터비전"],
+  ["3509","송현서","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["3510","신준혁","생성형AI","자율주행로봇"],
+  ["3511","안승빈","마이크로비트","디지털포트폴리오"],
+  ["3519","이준우","머신러닝/컴퓨터비전","생성형AI"],
+  ["3601","김규찬","디지털포트폴리오","마이크로비트"],
+  ["3602","김도윤","머신러닝/컴퓨터비전","마이크로비트"],
+  ["3607","박준휘","디지털포트폴리오","생성형AI"],
+  ["3608","박진우","자율주행로봇","마이크로비트"],
+  ["3609","박현성","자율주행로봇","머신러닝/컴퓨터비전"],
+  ["3611","서영진","생성형AI","디지털포트폴리오"],
+  ["3619","조권","마이크로비트","디지털포트폴리오"],
+  ["3621","천호경","자율주행로봇","마이크로비트"],
+];
+
+const DB = RAW.map(r => ({
+  id: r[0],
+  name: r[1],
+  grade: r[0][0],
+  cls: r[0][1],
+  num: r[0].slice(2),
+  am: r[2],
+  pm: r[3]
+}));
+
+function parseClass(q) {
+  q = q.replace(/\s/g,'').replace('학년','').replace('반','');
+  const m1 = q.match(/^([123])-?([1-6])$/);
+  if (m1) return { grade: m1[1], cls: m1[2] };
+  const m2 = q.match(/^([123])([1-6])$/);
+  if (m2) return { grade: m2[1], cls: m2[2] };
+  if (/^[1-6]반?$/.test(q.replace('반',''))) return { cls: q.replace('반','') };
+  return null;
+}
+
+function courseCourse(name) {
+  const short = { '생성형AI':'생성형 AI', '머신러닝/컴퓨터비전':'머신러닝 & 컴퓨터비전', '자율주행로봇':'자율주행 로봇', '디지털포트폴리오':'디지털 포트폴리오', '마이크로비트':'마이크로비트' };
+  return short[name] || name;
+}
+
+function renderStudent(s) {
+  return `<div class="result-card">
+    <div class="student-header">
+      <div class="avatar">${s.name[0]}</div>
+      <div>
+        <div class="student-name">${s.name}</div>
+        <div class="student-id">${s.grade}학년 ${s.cls}반 ${s.num}번 &nbsp;·&nbsp; 학번 ${s.id}</div>
+      </div>
+    </div>
+    <div class="course-row"><span class="time-badge am-badge">오전</span><span class="course-name">${courseCourse(s.am)}</span></div>
+    <div class="course-row"><span class="time-badge pm-badge">오후</span><span class="course-name">${courseCourse(s.pm)}</span></div>
+  </div>`;
+}
+
+function renderClass(students, label) {
+  const rows = students.sort((a,b)=>+a.num-+b.num).map(s =>
+    `<tr>
+      <td style="font-weight:500">${s.name}</td>
+      <td style="color:var(--color-text-secondary)">${s.num}번</td>
+      <td><span class="time-badge am-badge" style="font-size:11px">오전</span> ${courseCourse(s.am)}</td>
+      <td><span class="time-badge pm-badge" style="font-size:11px">오후</span> ${courseCourse(s.pm)}</td>
+    </tr>`
+  ).join('');
+  return `<div class="result-card">
+    <div class="class-header">${label} <span class="class-count">총 ${students.length}명 참여</span></div>
+    <table class="class-table">
+      <thead><tr><th>이름</th><th>번호</th><th>오전 강좌</th><th>오후 강좌</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function search() {
+  const q = document.getElementById('q').value.trim();
+  const out = document.getElementById('result');
+  if (!q) { out.innerHTML = ''; return; }
+
+  const cls = parseClass(q);
+  if (cls) {
+    let matched = DB.filter(s => (!cls.grade || s.grade === cls.grade) && s.cls === cls.cls);
+    if (!matched.length) { out.innerHTML = '<p class="empty">해당 학반 참여 학생이 없습니다.</p>'; return; }
+    const label = cls.grade ? `${cls.grade}학년 ${cls.cls}반` : `전 학년 ${cls.cls}반`;
+    out.innerHTML = renderClass(matched, label);
+    return;
+  }
+
+  const byName = DB.filter(s => s.name.includes(q));
+  if (byName.length) { out.innerHTML = byName.map(renderStudent).join(''); return; }
+
+  out.innerHTML = '<p class="empty">검색 결과가 없습니다. 이름(2자 이상) 또는 학반(예: 1-3, 2반)을 입력해 주세요.</p>';
+}
+
+document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter') search(); });
+
+const tags = document.getElementById('tags');
+['1학년','2학년','3학년'].forEach(g => {
+  [1,2,3,4,5,6].forEach(c => {
+    const grade = g[0];
+    const count = DB.filter(s => s.grade===grade && s.cls===String(c)).length;
+    if (!count) return;
+    const t = document.createElement('span');
+    t.className = 'tag';
+    t.textContent = `${g} ${c}반 (${count}명)`;
+    t.onclick = () => { document.getElementById('q').value=`${grade}-${c}`; search(); };
+    tags.appendChild(t);
+  });
+});
+</script>
