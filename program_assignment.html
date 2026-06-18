@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.13. 수업량 유연화 프로그램 학생 배정 현황</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --navy: #0d1b35;
+    --navy2: #162347;
+    --blue: #1e40af;
+    --sky: #3b82f6;
+    --accent: #f59e0b;
+    --accent2: #fbbf24;
+    --green: #059669;
+    --red: #dc2626;
+    --bg: #f0f4fb;
+    --card: #ffffff;
+    --text: #1e293b;
+    --sub: #64748b;
+    --border: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── 헤더 ── */
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 50%, #1a3a6e 100%);
+    color: #fff;
+    padding: 28px 24px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(59,130,246,0.18) 0%, transparent 60%);
+  }
+  .header-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--navy);
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 10px; letter-spacing: 0.05em;
+  }
+  .header h1 {
+    font-size: clamp(15px, 4vw, 20px);
+    font-weight: 700; line-height: 1.45;
+    position: relative;
+  }
+  .header h1 span { color: var(--accent2); }
+  .header-sub {
+    margin-top: 8px; font-size: 13px; opacity: 0.7;
+    position: relative;
+  }
+
+  /* ── 검색 섹션 ── */
+  .search-section {
+    background: var(--card);
+    padding: 20px 16px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .search-wrap {
+    max-width: 600px; margin: 0 auto;
+  }
+  .search-label {
+    font-size: 12px; font-weight: 600; color: var(--sub);
+    margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .search-row {
+    display: flex; gap: 8px;
+  }
+  .search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--sky); }
+  .search-btn {
+    padding: 12px 20px;
+    background: var(--blue);
+    color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .search-btn:hover { background: var(--sky); }
+  .search-hint {
+    margin-top: 7px; font-size: 11.5px; color: var(--sub);
+  }
+
+  /* ── 강의실 아이콘 그리드 ── */
+  .room-section {
+    background: var(--card);
+    padding: 16px 16px 20px;
+    border-bottom: 3px solid var(--border);
+  }
+  .room-title {
+    font-size: 12px; font-weight: 600; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px; max-width: 600px; margin-left: auto; margin-right: auto;
+  }
+  .room-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    max-width: 600px; margin: 0 auto;
+  }
+  .room-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px 4px 8px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.18s;
+    gap: 4px;
+  }
+  .room-btn:hover {
+    border-color: var(--sky); background: #eff6ff;
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.15);
+  }
+  .room-btn.active {
+    border-color: var(--blue); background: #dbeafe;
+  }
+  .room-icon { font-size: 20px; }
+  .room-label {
+    font-size: 11px; font-weight: 600; color: var(--text);
+  }
+  .room-grade {
+    font-size: 9px; color: var(--sub);
+  }
+
+  /* ── 결과 영역 ── */
+  .result-section {
+    padding: 16px;
+    max-width: 700px; margin: 0 auto;
+  }
+  .result-placeholder {
+    text-align: center; padding: 40px 20px;
+    color: var(--sub);
+  }
+  .result-placeholder .big-icon { font-size: 48px; margin-bottom: 12px; }
+  .result-placeholder p { font-size: 14px; line-height: 1.6; }
+
+  /* 개인 결과 */
+  .student-result {}
+  .student-header {
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    color: #fff; border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .student-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .student-info h2 { font-size: 17px; font-weight: 700; }
+  .student-info p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .grade-badge {
+    margin-left: auto; flex-shrink: 0;
+    background: var(--accent); color: var(--navy);
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+  }
+
+  .assignment-card {
+    background: var(--card); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 10px;
+    border-left: 4px solid var(--sky);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .assignment-card.pm { border-left-color: var(--green); }
+  .asgn-time {
+    font-size: 11px; font-weight: 700; color: var(--sky);
+    background: #eff6ff; padding: 3px 8px; border-radius: 6px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .assignment-card.pm .asgn-time { color: var(--green); background: #d1fae5; }
+  .asgn-body { flex: 1; min-width: 0; }
+  .asgn-course { font-size: 13px; font-weight: 600; }
+  .asgn-room {
+    font-size: 12px; color: var(--sub); margin-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* 강좌/강의실 결과 */
+  .course-result-header {
+    background: var(--card); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 14px;
+    border: 2px solid var(--sky);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .course-result-header.pm { border-color: var(--green); }
+  .course-icon { font-size: 28px; }
+  .course-title { font-size: 15px; font-weight: 700; }
+  .course-meta { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .course-room-badge {
+    margin-left: auto; flex-shrink: 0;
+    background: var(--sky); color: #fff;
+    font-size: 12px; font-weight: 700;
+    padding: 5px 12px; border-radius: 8px;
+  }
+  .course-result-header.pm .course-room-badge { background: var(--green); }
+
+  /* 명단 카드 */
+  .list-card {
+    background: var(--card); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .list-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-card-title { font-size: 13px; font-weight: 700; }
+  .list-card-room {
+    font-size: 12px; color: var(--sub);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .list-card-count {
+    font-size: 11px; font-weight: 600;
+    background: var(--bg); color: var(--sub);
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+  }
+  .student-chip {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 8px; border-radius: 7px;
+    background: var(--bg); font-size: 12px;
+  }
+  .student-chip .chip-grade {
+    font-size: 9px; font-weight: 700;
+    width: 16px; height: 16px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--sky); color: #fff;
+  }
+  .student-chip .chip-grade.g2 { background: var(--green); }
+  .student-chip .chip-grade.g3 { background: var(--accent); color: var(--navy); }
+  .chip-id { font-size: 10px; color: var(--sub); }
+  .chip-name { font-weight: 500; }
+
+  /* 섹션 구분자 */
+  .section-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0 10px;
+    font-size: 12px; font-weight: 700; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* 오류 메시지 */
+  .not-found {
+    text-align: center; padding: 30px 20px;
+    background: var(--card); border-radius: 12px;
+  }
+  .not-found .icon { font-size: 36px; margin-bottom: 10px; }
+  .not-found p { font-size: 14px; color: var(--sub); }
+
+  /* 로딩 스피너 */
+  .loading {
+    text-align: center; padding: 30px; color: var(--sub);
+    font-size: 14px;
+  }
+
+  @media (max-width: 400px) {
+    .room-grid { grid-template-columns: repeat(4, 1fr); }
+    .student-grid { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">📋 학생 배정 현황</div>
+  <h1>2026. 1학기 <span>김해임호고</span><br>수업량유연화 <span>7.13.(월)</span> 프로그램<br>학생 배정 현황</h1>
+  <p class="header-sub">오전 1·2강 (1~3학년) &nbsp;|&nbsp; 오후 3·4강 (1·2학년)</p>
+</div>
+
+<!-- 검색 -->
+<div class="search-section">
+  <div class="search-wrap">
+    <div class="search-label">🔍 학생·강좌·강의실 검색</div>
+    <div class="search-row">
+      <input class="search-input" id="searchInput" type="text"
+        placeholder="학번, 이름, 강좌명, 강의실(예: 1-1반) 입력"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="search-btn" onclick="doSearch()">검색</button>
+    </div>
+    <div class="search-hint">예) 1234 · 홍길동 · 간호학과 · 1-1반</div>
+  </div>
+</div>
+
+<!-- 강의실 아이콘 -->
+<div class="room-section">
+  <div class="room-title">🏫 강의실 바로가기 (클릭하면 명단 표시)</div>
+  <div class="room-grid" id="roomGrid"></div>
+</div>
+
+<!-- 결과 -->
+<div class="result-section" id="resultSection">
+  <div class="result-placeholder">
+    <div class="big-icon">🎓</div>
+    <p>학번·이름·강좌명·강의실을 검색하거나<br>위의 강의실 버튼을 눌러주세요.</p>
+  </div>
+</div>
+
+<script>
+const DATA = {"1": {"label": "1강 (1,2교시)", "ampm": "오전", "courses": [{"course": "디지털 미디어 콘텐츠 제작자A반", "classroom": "1-1반", "students": [{"id": "1118", "name": "조혜성", "grade": 1}, {"id": "1101", "name": "고태현", "grade": 1}, {"id": "1212", "name": "양하율", "grade": 1}, {"id": "1214", "name": "오지원", "grade": 1}, {"id": "1202", "name": "구혜윤", "grade": 1}, {"id": "1321", "name": "정세운", "grade": 1}, {"id": "1307", "name": "김태윤", "grade": 1}, {"id": "1406", "name": "박은우", "grade": 1}, {"id": "1409", "name": "손주형", "grade": 1}, {"id": "1423", "name": "허동혁", "grade": 1}, {"id": "1513", "name": "백경립", "grade": 1}, {"id": "1516", "name": "신주영", "grade": 1}, {"id": "1517", "name": "오승하", "grade": 1}, {"id": "1608", "name": "김현승", "grade": 1}, {"id": "1617", "name": "임섭준", "grade": 1}, {"id": "1621", "name": "최선우", "grade": 1}, {"id": "3109", "name": "문채민", "grade": 3}, {"id": "3207", "name": "박준서", "grade": 3}, {"id": "3418", "name": "이현석", "grade": 3}, {"id": "3302", "name": "권아섭", "grade": 3}, {"id": "3520", "name": "장지훈", "grade": 3}, {"id": "3622", "name": "최예승", "grade": 3}]}, {"course": "디지털 미디어 콘텐츠 제작자B반", "classroom": "2-1반", "students": [{"id": "2112", "name": "박정호", "grade": 2}, {"id": "2122", "name": "정원일", "grade": 2}, {"id": "2124", "name": "주현수", "grade": 2}, {"id": "2210", "name": "류지훈", "grade": 2}, {"id": "2224", "name": "허수종", "grade": 2}, {"id": "2203", "name": "공민석", "grade": 2}, {"id": "2306", "name": "김민재", "grade": 2}, {"id": "2309", "name": "김여준", "grade": 2}, {"id": "2313", "name": "신환주", "grade": 2}, {"id": "2413", "name": "성지원", "grade": 2}, {"id": "2418", "name": "이수민", "grade": 2}, {"id": "2423", "name": "조현우", "grade": 2}, {"id": "2517", "name": "정우성", "grade": 2}, {"id": "2509", "name": "배창민", "grade": 2}, {"id": "2512", "name": "이용준", "grade": 2}, {"id": "2605", "name": "구민찬", "grade": 2}, {"id": "2610", "name": "김태윤", "grade": 2}, {"id": "2622", "name": "최시우", "grade": 2}, {"id": "3121", "name": "진재민", "grade": 3}, {"id": "3224", "name": "황정훈", "grade": 3}, {"id": "3408", "name": "김태헌", "grade": 3}, {"id": "3320", "name": "정한준", "grade": 3}, {"id": "3524", "name": "허승호", "grade": 3}, {"id": "3620", "name": "조영포", "grade": 3}]}, {"course": "전기차 시스템 엔지니어A반", "classroom": "1-2반", "students": [{"id": "1114", "name": "윤예준", "grade": 1}, {"id": "1113", "name": "유대건", "grade": 1}, {"id": "1116", "name": "이호준", "grade": 1}, {"id": "1206", "name": "김대현", "grade": 1}, {"id": "1210", "name": "송지한", "grade": 1}, {"id": "1219", "name": "장무창", "grade": 1}, {"id": "1320", "name": "전재효", "grade": 1}, {"id": "1301", "name": "강대웅", "grade": 1}, {"id": "1302", "name": "강지우", "grade": 1}, {"id": "1419", "name": "정희력", "grade": 1}, {"id": "1420", "name": "조영승", "grade": 1}, {"id": "1418", "name": "정현우", "grade": 1}, {"id": "1501", "name": "김건호", "grade": 1}, {"id": "1504", "name": "김시훈", "grade": 1}, {"id": "1519", "name": "이승현", "grade": 1}, {"id": "1602", "name": "강주성", "grade": 1}, {"id": "1603", "name": "김동현", "grade": 1}, {"id": "1618", "name": "조민우", "grade": 1}, {"id": "3105", "name": "김우진", "grade": 3}, {"id": "3217", "name": "조동현", "grade": 3}, {"id": "3417", "name": "이지호", "grade": 3}, {"id": "3307", "name": "김재영", "grade": 3}, {"id": "3510", "name": "신준혁", "grade": 3}, {"id": "3609", "name": "박현성", "grade": 3}]}, {"course": "전기차 시스템 엔지니어B반", "classroom": "2-2반", "students": [{"id": "2106", "name": "김승범", "grade": 2}, {"id": "2109", "name": "김한재", "grade": 2}, {"id": "2104", "name": "김민재", "grade": 2}, {"id": "2219", "name": "이현우", "grade": 2}, {"id": "2212", "name": "박지성", "grade": 2}, {"id": "2201", "name": "강태윤", "grade": 2}, {"id": "2302", "name": "강무근", "grade": 2}, {"id": "2317", "name": "이영준", "grade": 2}, {"id": "2321", "name": "장호건", "grade": 2}, {"id": "2412", "name": "서효민", "grade": 2}, {"id": "2419", "name": "이승찬", "grade": 2}, {"id": "2422", "name": "정민서", "grade": 2}, {"id": "2505", "name": "김지호", "grade": 2}, {"id": "2514", "name": "장연오", "grade": 2}, {"id": "2504", "name": "김성욱", "grade": 2}, {"id": "2613", "name": "박동현", "grade": 2}, {"id": "2617", "name": "이동훈", "grade": 2}, {"id": "2601", "name": "강동식", "grade": 2}, {"id": "3120", "name": "조준의", "grade": 3}, {"id": "3220", "name": "차승환", "grade": 3}, {"id": "3404", "name": "김장훈", "grade": 3}, {"id": "3319", "name": "이종훈", "grade": 3}, {"id": "3511", "name": "안승빈", "grade": 3}, {"id": "3611", "name": "서영진", "grade": 3}]}, {"course": "자율주행 알고리즘 개발자A반", "classroom": "1-3반", "students": [{"id": "1104", "name": "김주훈", "grade": 1}, {"id": "1110", "name": "심정원", "grade": 1}, {"id": "1111", "name": "안도현", "grade": 1}, {"id": "1221", "name": "정성엽", "grade": 1}, {"id": "1217", "name": "임도명", "grade": 1}, {"id": "1223", "name": "최지훈", "grade": 1}, {"id": "1305", "name": "김민준", "grade": 1}, {"id": "1313", "name": "박태민", "grade": 1}, {"id": "1405", "name": "박시후", "grade": 1}, {"id": "1416", "name": "이지훈", "grade": 1}, {"id": "1417", "name": "전민준", "grade": 1}, {"id": "1518", "name": "이상원", "grade": 1}, {"id": "1522", "name": "차준후", "grade": 1}, {"id": "1614", "name": "유선우", "grade": 1}, {"id": "1606", "name": "김준우", "grade": 1}, {"id": "1622", "name": "", "grade": 1}, {"id": "3123", "name": "최수훈", "grade": 3}, {"id": "3218", "name": "조재희", "grade": 3}, {"id": "3409", "name": "도형륜", "grade": 3}, {"id": "3308", "name": "나현중", "grade": 3}, {"id": "3502", "name": "김민찬", "grade": 3}, {"id": "3605", "name": "김태원", "grade": 3}]}, {"course": "자율주행 알고리즘 개발자B반", "classroom": "2-3반", "students": [{"id": "2113", "name": "서민범", "grade": 2}, {"id": "2102", "name": "구준서", "grade": 2}, {"id": "2118", "name": "이승민", "grade": 2}, {"id": "2222", "name": "조은성", "grade": 2}, {"id": "2211", "name": "박경빈", "grade": 2}, {"id": "2209", "name": "김범준", "grade": 2}, {"id": "2301", "name": "KHEGAI ALEKSEI", "grade": 2}, {"id": "2318", "name": "이태윤", "grade": 2}, {"id": "2322", "name": "정유찬", "grade": 2}, {"id": "2405", "name": "김민준", "grade": 2}, {"id": "2409", "name": "박장호", "grade": 2}, {"id": "2420", "name": "임시온", "grade": 2}, {"id": "2515", "name": "정상준", "grade": 2}, {"id": "2522", "name": "최원석", "grade": 2}, {"id": "2501", "name": "MIRONOV DMITRIY", "grade": 2}, {"id": "2604", "name": "고원준", "grade": 2}, {"id": "2609", "name": "김승현", "grade": 2}, {"id": "2615", "name": "송건우", "grade": 2}, {"id": "3117", "name": "장지훈", "grade": 3}, {"id": "3201", "name": "강민제", "grade": 3}, {"id": "3405", "name": "김주환", "grade": 3}, {"id": "3311", "name": "박헌주", "grade": 3}, {"id": "3503", "name": "김인찬", "grade": 3}, {"id": "3610", "name": "배준영", "grade": 3}]}, {"course": "생명과학 연구원A반", "classroom": "1-4반", "students": [{"id": "1120", "name": "최상진", "grade": 1}, {"id": "1106", "name": "박은찬", "grade": 1}, {"id": "1102", "name": "김동한", "grade": 1}, {"id": "1213", "name": "오준혁", "grade": 1}, {"id": "1201", "name": "구하람", "grade": 1}, {"id": "1222", "name": "최준범", "grade": 1}, {"id": "1306", "name": "김준용", "grade": 1}, {"id": "1318", "name": "윤재현", "grade": 1}, {"id": "1323", "name": "진민승", "grade": 1}, {"id": "1403", "name": "김유민", "grade": 1}, {"id": "1408", "name": "서준서", "grade": 1}, {"id": "1407", "name": "박지환", "grade": 1}, {"id": "1502", "name": "김광현", "grade": 1}, {"id": "1515", "name": "손승현", "grade": 1}, {"id": "1506", "name": "김지헌", "grade": 1}, {"id": "1615", "name": "이승현", "grade": 1}, {"id": "1619", "name": "조준영", "grade": 1}, {"id": "1620", "name": "진승찬", "grade": 1}, {"id": "3102", "name": "김명신", "grade": 3}, {"id": "3223", "name": "한민재", "grade": 3}, {"id": "3402", "name": "김민제", "grade": 3}, {"id": "3318", "name": "이승환", "grade": 3}, {"id": "3515", "name": "이동준", "grade": 3}, {"id": "3604", "name": "김준우", "grade": 3}]}, {"course": "생명과학 연구원B반", "classroom": "2-4반", "students": [{"id": "2111", "name": "문경록", "grade": 2}, {"id": "2117", "name": "이도윤", "grade": 2}, {"id": "2123", "name": "정채운", "grade": 2}, {"id": "2214", "name": "유예준", "grade": 2}, {"id": "2206", "name": "김도균", "grade": 2}, {"id": "2202", "name": "고송원", "grade": 2}, {"id": "2304", "name": "김강희", "grade": 2}, {"id": "2320", "name": "장민식", "grade": 2}, {"id": "2324", "name": "홍윤우", "grade": 2}, {"id": "2401", "name": "NGUYEN TRUONG MINH DUC", "grade": 2}, {"id": "2404", "name": "김경준", "grade": 2}, {"id": "2421", "name": "전현수", "grade": 2}, {"id": "2510", "name": "석유준", "grade": 2}, {"id": "2518", "name": "정현준", "grade": 2}, {"id": "2513", "name": "이창민", "grade": 2}, {"id": "2608", "name": "김승민", "grade": 2}, {"id": "2619", "name": "장주호", "grade": 2}, {"id": "2621", "name": "진주현", "grade": 2}, {"id": "3214", "name": "이승민", "grade": 3}, {"id": "3424", "name": "최현성", "grade": 3}, {"id": "3322", "name": "지명준", "grade": 3}, {"id": "3516", "name": "이승준", "grade": 3}, {"id": "3615", "name": "이원영", "grade": 3}]}, {"course": "재활의학 전문가A반", "classroom": "1-5반", "students": [{"id": "1117", "name": "정동근", "grade": 1}, {"id": "1109", "name": "변상준", "grade": 1}, {"id": "1204", "name": "김건우", "grade": 1}, {"id": "1215", "name": "이우진", "grade": 1}, {"id": "1207", "name": "김민성", "grade": 1}, {"id": "1304", "name": "곽민성", "grade": 1}, {"id": "1308", "name": "김하겸", "grade": 1}, {"id": "1317", "name": "유하랑", "grade": 1}, {"id": "1401", "name": "권준휘", "grade": 1}, {"id": "1413", "name": "이시훈", "grade": 1}, {"id": "1421", "name": "최예성", "grade": 1}, {"id": "1505", "name": "김준영", "grade": 1}, {"id": "1514", "name": "변승수", "grade": 1}, {"id": "1503", "name": "김성진", "grade": 1}, {"id": "1601", "name": "강우진", "grade": 1}, {"id": "1607", "name": "김태현", "grade": 1}, {"id": "1623", "name": "홍서윤", "grade": 1}, {"id": "3118", "name": "전효찬", "grade": 3}, {"id": "3216", "name": "정재훈", "grade": 3}, {"id": "3403", "name": "김민준", "grade": 3}, {"id": "3315", "name": "심주호", "grade": 3}, {"id": "3501", "name": "강민준", "grade": 3}, {"id": "3624", "name": "최준혁", "grade": 3}]}, {"course": "재활의학 전문가B반", "classroom": "2-5반", "students": [{"id": "2125", "name": "허재원", "grade": 2}, {"id": "2114", "name": "손창수", "grade": 2}, {"id": "2119", "name": "이지민", "grade": 2}, {"id": "2220", "name": "임환석", "grade": 2}, {"id": "2218", "name": "이태규", "grade": 2}, {"id": "2207", "name": "김민성", "grade": 2}, {"id": "2312", "name": "백인수", "grade": 2}, {"id": "2315", "name": "윤지후", "grade": 2}, {"id": "2323", "name": "최인준", "grade": 2}, {"id": "2410", "name": "박재흠", "grade": 2}, {"id": "2416", "name": "우병훈", "grade": 2}, {"id": "2417", "name": "이민균", "grade": 2}, {"id": "2519", "name": "제은찬", "grade": 2}, {"id": "2502", "name": "김경목", "grade": 2}, {"id": "2506", "name": "박건희", "grade": 2}, {"id": "2606", "name": "김민재", "grade": 2}, {"id": "2616", "name": "안태호", "grade": 2}, {"id": "2623", "name": "최윤서", "grade": 2}, {"id": "3219", "name": "진승현", "grade": 3}, {"id": "3407", "name": "김지후", "grade": 3}, {"id": "3324", "name": "한상훈", "grade": 3}, {"id": "3522", "name": "최선민", "grade": 3}, {"id": "3614", "name": "윤준서", "grade": 3}]}, {"course": "임상의학 전문가A반", "classroom": "1-6반", "students": [{"id": "1108", "name": "백지원", "grade": 1}, {"id": "1122", "name": "홍우진", "grade": 1}, {"id": "1119", "name": "진준호", "grade": 1}, {"id": "1211", "name": "안성준", "grade": 1}, {"id": "1315", "name": "안수환", "grade": 1}, {"id": "1309", "name": "김형진", "grade": 1}, {"id": "1319", "name": "이재민", "grade": 1}, {"id": "1412", "name": "윤찬웅", "grade": 1}, {"id": "1404", "name": "김지원", "grade": 1}, {"id": "1411", "name": "심민성", "grade": 1}, {"id": "1510", "name": "박서준", "grade": 1}, {"id": "1512", "name": "방준우", "grade": 1}, {"id": "1520", "name": "장민서", "grade": 1}, {"id": "1609", "name": "박건우", "grade": 1}, {"id": "1610", "name": "박성우", "grade": 1}, {"id": "1616", "name": "이영훈", "grade": 1}, {"id": "3107", "name": "동준용", "grade": 3}, {"id": "3208", "name": "방준용", "grade": 3}, {"id": "3310", "name": "박민혁", "grade": 3}, {"id": "3512", "name": "유선후", "grade": 3}, {"id": "3613", "name": "유선우", "grade": 3}, {"id": "3411", "name": "서준우", "grade": 3}]}, {"course": "임상의학 전문가B반", "classroom": "2-6반", "students": [{"id": "2121", "name": "정세윤", "grade": 2}, {"id": "2105", "name": "김성민", "grade": 2}, {"id": "2107", "name": "김윤우", "grade": 2}, {"id": "2217", "name": "이정훈", "grade": 2}, {"id": "2216", "name": "윤대한", "grade": 2}, {"id": "2215", "name": "유현준", "grade": 2}, {"id": "2305", "name": "김동현", "grade": 2}, {"id": "2311", "name": "김태윤", "grade": 2}, {"id": "2314", "name": "양성철", "grade": 2}, {"id": "2403", "name": "공재윤", "grade": 2}, {"id": "2407", "name": "김지후", "grade": 2}, {"id": "2411", "name": "박현빈", "grade": 2}, {"id": "2516", "name": "정승원", "grade": 2}, {"id": "2511", "name": "유현성", "grade": 2}, {"id": "2520", "name": "조성훈", "grade": 2}, {"id": "2602", "name": "강동훈", "grade": 2}, {"id": "2603", "name": "강두호", "grade": 2}, {"id": "2614", "name": "박종인", "grade": 2}, {"id": "3122", "name": "천수현", "grade": 3}, {"id": "3210", "name": "오지원", "grade": 3}, {"id": "3316", "name": "양서원", "grade": 3}, {"id": "3519", "name": "이준우", "grade": 3}, {"id": "3616", "name": "이태규", "grade": 3}, {"id": "3414", "name": "윤서준", "grade": 3}]}, {"course": "인공지능 소프트웨어 개발자", "classroom": "3-1반", "students": [{"id": "1121", "name": "허영환", "grade": 1}, {"id": "1203", "name": "권동호", "grade": 1}, {"id": "1312", "name": "박지환", "grade": 1}, {"id": "1410", "name": "신강민", "grade": 1}, {"id": "1507", "name": "김태용", "grade": 1}, {"id": "1613", "name": "손윤성", "grade": 1}, {"id": "2115", "name": "신채훈", "grade": 2}, {"id": "2221", "name": "장근영", "grade": 2}, {"id": "2310", "name": "김태원", "grade": 2}, {"id": "2415", "name": "신수민", "grade": 2}, {"id": "2508", "name": "배서현", "grade": 2}, {"id": "2618", "name": "이찬섭", "grade": 2}, {"id": "3111", "name": "박태민", "grade": 3}, {"id": "3114", "name": "유태영", "grade": 3}, {"id": "3203", "name": "김성언", "grade": 3}, {"id": "3211", "name": "윤우진", "grade": 3}, {"id": "3419", "name": "장태빈", "grade": 3}, {"id": "3422", "name": "최민성", "grade": 3}, {"id": "3305", "name": "김상록", "grade": 3}, {"id": "3306", "name": "김송규", "grade": 3}, {"id": "3505", "name": "김태왕", "grade": 3}, {"id": "3506", "name": "박준석", "grade": 3}, {"id": "3607", "name": "박준휘", "grade": 3}, {"id": "3619", "name": "조권", "grade": 3}]}, {"course": "자율주행 시스템 엔지니어", "classroom": "3-2반", "students": [{"id": "1103", "name": "김민찬", "grade": 1}, {"id": "1208", "name": "김지후", "grade": 1}, {"id": "1303", "name": "고대현", "grade": 1}, {"id": "1422", "name": "하승민", "grade": 1}, {"id": "1508", "name": "김태현", "grade": 1}, {"id": "2116", "name": "안용호", "grade": 2}, {"id": "2205", "name": "김남우", "grade": 2}, {"id": "2319", "name": "임준형", "grade": 2}, {"id": "2402", "name": "강민재", "grade": 2}, {"id": "2524", "name": "황지훈", "grade": 2}, {"id": "2607", "name": "김민준", "grade": 2}, {"id": "3110", "name": "박준수", "grade": 3}, {"id": "3113", "name": "유예상", "grade": 3}, {"id": "3215", "name": "이준해", "grade": 3}, {"id": "3213", "name": "이도엽", "grade": 3}, {"id": "3413", "name": "오정빈", "grade": 3}, {"id": "3421", "name": "정유철", "grade": 3}, {"id": "3309", "name": "문지윤", "grade": 3}, {"id": "3312", "name": "손지훈", "grade": 3}, {"id": "3504", "name": "김지민", "grade": 3}, {"id": "3514", "name": "윤건우", "grade": 3}, {"id": "3608", "name": "박진우", "grade": 3}, {"id": "3617", "name": "이현서", "grade": 3}]}, {"course": "소프트웨어 프로그래밍 전문가", "classroom": "3-3반", "students": [{"id": "1115", "name": "이준영", "grade": 1}, {"id": "1218", "name": "임태윤", "grade": 1}, {"id": "1311", "name": "박민세", "grade": 1}, {"id": "1415", "name": "이준석", "grade": 1}, {"id": "1521", "name": "정차빈", "grade": 1}, {"id": "1611", "name": "서승우", "grade": 1}, {"id": "2120", "name": "이지성", "grade": 2}, {"id": "2204", "name": "구현우", "grade": 2}, {"id": "2307", "name": "김석현", "grade": 2}, {"id": "2408", "name": "박신우", "grade": 2}, {"id": "2503", "name": "김민준", "grade": 2}, {"id": "2620", "name": "정동욱", "grade": 2}, {"id": "3112", "name": "변휘승", "grade": 3}, {"id": "3119", "name": "조은율", "grade": 3}, {"id": "3204", "name": "김성주", "grade": 3}, {"id": "3206", "name": "민세연", "grade": 3}, {"id": "3423", "name": "최원혁", "grade": 3}, {"id": "3412", "name": "서훈성", "grade": 3}, {"id": "3317", "name": "이선민", "grade": 3}, {"id": "3321", "name": "조승원", "grade": 3}, {"id": "3507", "name": "박찬민", "grade": 3}, {"id": "3509", "name": "송현서", "grade": 3}, {"id": "3603", "name": "김민석", "grade": 3}, {"id": "3618", "name": "임주완", "grade": 3}]}, {"course": "지능형 로봇 제어 엔지니어", "classroom": "3-4반", "students": [{"id": "1220", "name": "장석원", "grade": 1}, {"id": "1316", "name": "엄영균", "grade": 1}, {"id": "1402", "name": "김수영", "grade": 1}, {"id": "1509", "name": "문지호", "grade": 1}, {"id": "1604", "name": "김민규", "grade": 1}, {"id": "2108", "name": "김종담", "grade": 2}, {"id": "2208", "name": "김민욱", "grade": 2}, {"id": "2303", "name": "강민규", "grade": 2}, {"id": "2414", "name": "신민준", "grade": 2}, {"id": "2507", "name": "박지훈", "grade": 2}, {"id": "3104", "name": "김시율", "grade": 3}, {"id": "3115", "name": "이창훈", "grade": 3}, {"id": "3202", "name": "김문식", "grade": 3}, {"id": "3222", "name": "최원준", "grade": 3}, {"id": "3420", "name": "정우찬", "grade": 3}, {"id": "3401", "name": "김민규", "grade": 3}, {"id": "3303", "name": "김대현", "grade": 3}, {"id": "3323", "name": "최은성", "grade": 3}, {"id": "3517", "name": "이영재", "grade": 3}, {"id": "3523", "name": "하동우", "grade": 3}, {"id": "3601", "name": "김규찬", "grade": 3}, {"id": "3623", "name": "최윤성", "grade": 3}]}, {"course": "IoT 임베디드 시스템 개발자", "classroom": "3-5반", "students": [{"id": "1107", "name": "배재현", "grade": 1}, {"id": "1322", "name": "주유찬", "grade": 1}, {"id": "1612", "name": "서승현", "grade": 1}, {"id": "2110", "name": "김한준", "grade": 2}, {"id": "2223", "name": "천시우", "grade": 2}, {"id": "2316", "name": "윤태원", "grade": 2}, {"id": "2424", "name": "지경원", "grade": 2}, {"id": "2521", "name": "진성현", "grade": 2}, {"id": "2611", "name": "김희민", "grade": 2}, {"id": "3101", "name": "김동현", "grade": 3}, {"id": "3106", "name": "김정훈", "grade": 3}, {"id": "3212", "name": "이대영", "grade": 3}, {"id": "3209", "name": "배규태", "grade": 3}, {"id": "3406", "name": "김준서", "grade": 3}, {"id": "3415", "name": "이동혁", "grade": 3}, {"id": "3313", "name": "신상빈", "grade": 3}, {"id": "3314", "name": "신영현", "grade": 3}, {"id": "3508", "name": "서원상", "grade": 3}, {"id": "3602", "name": "김도윤", "grade": 3}, {"id": "3621", "name": "천호경", "grade": 3}]}, {"course": "빅데이터 프로그램 개발자", "classroom": "3-6반", "students": [{"id": "1112", "name": "엄장원", "grade": 1}, {"id": "1216", "name": "이환희", "grade": 1}, {"id": "1310", "name": "박경빈", "grade": 1}, {"id": "1511", "name": "박준서", "grade": 1}, {"id": "1605", "name": "김민재", "grade": 1}, {"id": "2101", "name": "강주환", "grade": 2}, {"id": "2213", "name": "오동현", "grade": 2}, {"id": "2308", "name": "김억", "grade": 2}, {"id": "2406", "name": "김민혁", "grade": 2}, {"id": "2523", "name": "허승연", "grade": 2}, {"id": "2624", "name": "최정환", "grade": 2}, {"id": "3116", "name": "장준호", "grade": 3}, {"id": "3108", "name": "문상우", "grade": 3}, {"id": "3221", "name": "차윤호", "grade": 3}, {"id": "3205", "name": "김재윤", "grade": 3}, {"id": "3416", "name": "이병철", "grade": 3}, {"id": "3410", "name": "배재현", "grade": 3}, {"id": "3301", "name": "권민혁", "grade": 3}, {"id": "3518", "name": "이원영", "grade": 3}, {"id": "3521", "name": "조민재", "grade": 3}, {"id": "3606", "name": "노강민", "grade": 3}, {"id": "3612", "name": "손준민", "grade": 3}]}]}, "2": {"label": "2강 (3,4교시)", "ampm": "오전", "courses": [{"course": "디지털 미디어 콘텐츠 제작자A반", "classroom": "1-1반", "students": [{"id": "1115", "name": "이준영", "grade": 1}, {"id": "1107", "name": "배재현", "grade": 1}, {"id": "1211", "name": "안성준", "grade": 1}, {"id": "1216", "name": "이환희", "grade": 1}, {"id": "1217", "name": "임도명", "grade": 1}, {"id": "1317", "name": "유하랑", "grade": 1}, {"id": "1313", "name": "박태민", "grade": 1}, {"id": "1315", "name": "안수환", "grade": 1}, {"id": "1413", "name": "이시훈", "grade": 1}, {"id": "1421", "name": "최예성", "grade": 1}, {"id": "1411", "name": "심민성", "grade": 1}, {"id": "1503", "name": "김성진", "grade": 1}, {"id": "1510", "name": "박서준", "grade": 1}, {"id": "1519", "name": "이승현", "grade": 1}, {"id": "1603", "name": "김동현", "grade": 1}, {"id": "1618", "name": "조민우", "grade": 1}, {"id": "1615", "name": "이승현", "grade": 1}, {"id": "3104", "name": "김시율", "grade": 3}, {"id": "3209", "name": "배규태", "grade": 3}, {"id": "3420", "name": "정우찬", "grade": 3}, {"id": "3317", "name": "이선민", "grade": 3}, {"id": "3508", "name": "서원상", "grade": 3}, {"id": "3613", "name": "유선우", "grade": 3}]}, {"course": "디지털 미디어 콘텐츠 제작자B반", "classroom": "2-1반", "students": [{"id": "2114", "name": "손창수", "grade": 2}, {"id": "2118", "name": "이승민", "grade": 2}, {"id": "2104", "name": "김민재", "grade": 2}, {"id": "2220", "name": "임환석", "grade": 2}, {"id": "2207", "name": "김민성", "grade": 2}, {"id": "2201", "name": "강태윤", "grade": 2}, {"id": "2302", "name": "강무근", "grade": 2}, {"id": "2317", "name": "이영준", "grade": 2}, {"id": "2321", "name": "장호건", "grade": 2}, {"id": "2406", "name": "김민혁", "grade": 2}, {"id": "2409", "name": "박장호", "grade": 2}, {"id": "2417", "name": "이민균", "grade": 2}, {"id": "2516", "name": "정승원", "grade": 2}, {"id": "2511", "name": "유현성", "grade": 2}, {"id": "2520", "name": "조성훈", "grade": 2}, {"id": "2616", "name": "안태호", "grade": 2}, {"id": "2623", "name": "최윤서", "grade": 2}, {"id": "2624", "name": "최정환", "grade": 2}, {"id": "3115", "name": "이창훈", "grade": 3}, {"id": "3220", "name": "차승환", "grade": 3}, {"id": "3413", "name": "오정빈", "grade": 3}, {"id": "3318", "name": "이승환", "grade": 3}, {"id": "3518", "name": "이원영", "grade": 3}, {"id": "3606", "name": "노강민", "grade": 3}]}, {"course": "전기차 시스템 엔지니어A반", "classroom": "1-2반", "students": [{"id": "1108", "name": "백지원", "grade": 1}, {"id": "1122", "name": "홍우진", "grade": 1}, {"id": "1104", "name": "김주훈", "grade": 1}, {"id": "1204", "name": "김건우", "grade": 1}, {"id": "1215", "name": "이우진", "grade": 1}, {"id": "1207", "name": "김민성", "grade": 1}, {"id": "1322", "name": "주유찬", "grade": 1}, {"id": "1309", "name": "김형진", "grade": 1}, {"id": "1406", "name": "박은우", "grade": 1}, {"id": "1409", "name": "손주형", "grade": 1}, {"id": "1423", "name": "허동혁", "grade": 1}, {"id": "1511", "name": "박준서", "grade": 1}, {"id": "1512", "name": "방준우", "grade": 1}, {"id": "1520", "name": "장민서", "grade": 1}, {"id": "1610", "name": "박성우", "grade": 1}, {"id": "1620", "name": "진승찬", "grade": 1}, {"id": "1611", "name": "서승우", "grade": 1}, {"id": "3118", "name": "전효찬", "grade": 3}, {"id": "3213", "name": "이도엽", "grade": 3}, {"id": "3412", "name": "서훈성", "grade": 3}, {"id": "3302", "name": "권아섭", "grade": 3}, {"id": "3514", "name": "윤건우", "grade": 3}, {"id": "3608", "name": "박진우", "grade": 3}]}, {"course": "전기차 시스템 엔지니어B반", "classroom": "2-2반", "students": [{"id": "2113", "name": "서민범", "grade": 2}, {"id": "2102", "name": "구준서", "grade": 2}, {"id": "2116", "name": "안용호", "grade": 2}, {"id": "2210", "name": "류지훈", "grade": 2}, {"id": "2221", "name": "장근영", "grade": 2}, {"id": "2204", "name": "구현우", "grade": 2}, {"id": "2303", "name": "강민규", "grade": 2}, {"id": "2310", "name": "김태원", "grade": 2}, {"id": "2319", "name": "임준형", "grade": 2}, {"id": "2401", "name": "NGUYEN TRUONG MINH DUC", "grade": 2}, {"id": "2408", "name": "박신우", "grade": 2}, {"id": "2414", "name": "신민준", "grade": 2}, {"id": "2512", "name": "이용준", "grade": 2}, {"id": "2515", "name": "정상준", "grade": 2}, {"id": "2522", "name": "최원석", "grade": 2}, {"id": "2604", "name": "고원준", "grade": 2}, {"id": "2609", "name": "김승현", "grade": 2}, {"id": "2615", "name": "송건우", "grade": 2}, {"id": "3203", "name": "김성언", "grade": 3}, {"id": "3406", "name": "김준서", "grade": 3}, {"id": "3314", "name": "신영현", "grade": 3}, {"id": "3523", "name": "하동우", "grade": 3}, {"id": "3617", "name": "이현서", "grade": 3}]}, {"course": "자율주행 알고리즘 개발자A반", "classroom": "1-3반", "students": [{"id": "1112", "name": "엄장원", "grade": 1}, {"id": "1103", "name": "김민찬", "grade": 1}, {"id": "1102", "name": "김동한", "grade": 1}, {"id": "1203", "name": "권동호", "grade": 1}, {"id": "1202", "name": "구혜윤", "grade": 1}, {"id": "1301", "name": "강대웅", "grade": 1}, {"id": "1302", "name": "강지우", "grade": 1}, {"id": "1320", "name": "전재효", "grade": 1}, {"id": "1419", "name": "정희력", "grade": 1}, {"id": "1420", "name": "조영승", "grade": 1}, {"id": "1418", "name": "정현우", "grade": 1}, {"id": "1506", "name": "김지헌", "grade": 1}, {"id": "1521", "name": "정차빈", "grade": 1}, {"id": "1513", "name": "백경립", "grade": 1}, {"id": "1604", "name": "김민규", "grade": 1}, {"id": "1607", "name": "김태현", "grade": 1}, {"id": "1617", "name": "임섭준", "grade": 1}, {"id": "3101", "name": "김동현", "grade": 3}, {"id": "3222", "name": "최원준", "grade": 3}, {"id": "3416", "name": "이병철", "grade": 3}, {"id": "3312", "name": "손지훈", "grade": 3}, {"id": "3509", "name": "송현서", "grade": 3}, {"id": "3601", "name": "김규찬", "grade": 3}]}, {"course": "자율주행 알고리즘 개발자B반", "classroom": "2-3반", "students": [{"id": "2101", "name": "강주환", "grade": 2}, {"id": "2108", "name": "김종담", "grade": 2}, {"id": "2115", "name": "신채훈", "grade": 2}, {"id": "2212", "name": "박지성", "grade": 2}, {"id": "2219", "name": "이현우", "grade": 2}, {"id": "2208", "name": "김민욱", "grade": 2}, {"id": "2313", "name": "신환주", "grade": 2}, {"id": "2315", "name": "윤지후", "grade": 2}, {"id": "2320", "name": "장민식", "grade": 2}, {"id": "2411", "name": "박현빈", "grade": 2}, {"id": "2423", "name": "조현우", "grade": 2}, {"id": "2424", "name": "지경원", "grade": 2}, {"id": "2504", "name": "김성욱", "grade": 2}, {"id": "2514", "name": "장연오", "grade": 2}, {"id": "2503", "name": "김민준", "grade": 2}, {"id": "2607", "name": "김민준", "grade": 2}, {"id": "2617", "name": "이동훈", "grade": 2}, {"id": "2619", "name": "장주호", "grade": 2}, {"id": "3111", "name": "박태민", "grade": 3}, {"id": "3224", "name": "황정훈", "grade": 3}, {"id": "3404", "name": "김장훈", "grade": 3}, {"id": "3524", "name": "허승호", "grade": 3}, {"id": "3602", "name": "김도윤", "grade": 3}]}, {"course": "생명과학 연구원A반", "classroom": "1-4반", "students": [{"id": "1117", "name": "정동근", "grade": 1}, {"id": "1121", "name": "허영환", "grade": 1}, {"id": "1219", "name": "장무창", "grade": 1}, {"id": "1304", "name": "곽민성", "grade": 1}, {"id": "1308", "name": "김하겸", "grade": 1}, {"id": "1321", "name": "정세운", "grade": 1}, {"id": "1405", "name": "박시후", "grade": 1}, {"id": "1412", "name": "윤찬웅", "grade": 1}, {"id": "1422", "name": "하승민", "grade": 1}, {"id": "1516", "name": "신주영", "grade": 1}, {"id": "1514", "name": "변승수", "grade": 1}, {"id": "1505", "name": "김준영", "grade": 1}, {"id": "1601", "name": "강우진", "grade": 1}, {"id": "1616", "name": "이영훈", "grade": 1}, {"id": "1623", "name": "홍서윤", "grade": 1}, {"id": "3107", "name": "동준용", "grade": 3}, {"id": "3208", "name": "방준용", "grade": 3}, {"id": "3405", "name": "김주환", "grade": 3}, {"id": "3313", "name": "신상빈", "grade": 3}, {"id": "3507", "name": "박찬민", "grade": 3}, {"id": "3620", "name": "조영포", "grade": 3}]}, {"course": "생명과학 연구원B반", "classroom": "2-4반", "students": [{"id": "2121", "name": "정세윤", "grade": 2}, {"id": "2105", "name": "김성민", "grade": 2}, {"id": "2119", "name": "이지민", "grade": 2}, {"id": "2218", "name": "이태규", "grade": 2}, {"id": "2216", "name": "윤대한", "grade": 2}, {"id": "2223", "name": "천시우", "grade": 2}, {"id": "2307", "name": "김석현", "grade": 2}, {"id": "2308", "name": "김억", "grade": 2}, {"id": "2323", "name": "최인준", "grade": 2}, {"id": "2415", "name": "신수민", "grade": 2}, {"id": "2419", "name": "이승찬", "grade": 2}, {"id": "2422", "name": "정민서", "grade": 2}, {"id": "2506", "name": "박건희", "grade": 2}, {"id": "2509", "name": "배창민", "grade": 2}, {"id": "2519", "name": "제은찬", "grade": 2}, {"id": "2606", "name": "김민재", "grade": 2}, {"id": "2614", "name": "박종인", "grade": 2}, {"id": "2602", "name": "강동훈", "grade": 2}, {"id": "3122", "name": "천수현", "grade": 3}, {"id": "3201", "name": "강민제", "grade": 3}, {"id": "3409", "name": "도형륜", "grade": 3}, {"id": "3316", "name": "양서원", "grade": 3}, {"id": "3519", "name": "이준우", "grade": 3}, {"id": "3614", "name": "윤준서", "grade": 3}]}, {"course": "재활의학 전문가A반", "classroom": "1-5반", "students": [{"id": "1120", "name": "최상진", "grade": 1}, {"id": "1116", "name": "이호준", "grade": 1}, {"id": "1110", "name": "심정원", "grade": 1}, {"id": "1213", "name": "오준혁", "grade": 1}, {"id": "1201", "name": "구하람", "grade": 1}, {"id": "1218", "name": "임태윤", "grade": 1}, {"id": "1318", "name": "윤재현", "grade": 1}, {"id": "1319", "name": "이재민", "grade": 1}, {"id": "1323", "name": "진민승", "grade": 1}, {"id": "1407", "name": "박지환", "grade": 1}, {"id": "1416", "name": "이지훈", "grade": 1}, {"id": "1417", "name": "전민준", "grade": 1}, {"id": "1515", "name": "손승현", "grade": 1}, {"id": "1509", "name": "문지호", "grade": 1}, {"id": "1502", "name": "김광현", "grade": 1}, {"id": "1608", "name": "김현승", "grade": 1}, {"id": "1609", "name": "박건우", "grade": 1}, {"id": "1621", "name": "최선우", "grade": 1}, {"id": "3108", "name": "문상우", "grade": 3}, {"id": "3217", "name": "조동현", "grade": 3}, {"id": "3414", "name": "윤서준", "grade": 3}, {"id": "3309", "name": "문지윤", "grade": 3}, {"id": "3511", "name": "안승빈", "grade": 3}, {"id": "3612", "name": "손준민", "grade": 3}]}, {"course": "재활의학 전문가B반", "classroom": "2-5반", "students": [{"id": "2112", "name": "박정호", "grade": 2}, {"id": "2110", "name": "김한준", "grade": 2}, {"id": "2107", "name": "김윤우", "grade": 2}, {"id": "2224", "name": "허수종", "grade": 2}, {"id": "2205", "name": "김남우", "grade": 2}, {"id": "2222", "name": "조은성", "grade": 2}, {"id": "2305", "name": "김동현", "grade": 2}, {"id": "2311", "name": "김태윤", "grade": 2}, {"id": "2314", "name": "양성철", "grade": 2}, {"id": "2404", "name": "김경준", "grade": 2}, {"id": "2405", "name": "김민준", "grade": 2}, {"id": "2413", "name": "성지원", "grade": 2}, {"id": "2501", "name": "MIRONOV DMITRIY", "grade": 2}, {"id": "2505", "name": "김지호", "grade": 2}, {"id": "2518", "name": "정현준", "grade": 2}, {"id": "2608", "name": "김승민", "grade": 2}, {"id": "2613", "name": "박동현", "grade": 2}, {"id": "2621", "name": "진주현", "grade": 2}, {"id": "3117", "name": "장지훈", "grade": 3}, {"id": "3210", "name": "오지원", "grade": 3}, {"id": "3310", "name": "박민혁", "grade": 3}, {"id": "3515", "name": "이동준", "grade": 3}, {"id": "3616", "name": "이태규", "grade": 3}, {"id": "3421", "name": "정유철", "grade": 3}]}, {"course": "임상의학 전문가A반", "classroom": "1-6반", "students": [{"id": "1111", "name": "안도현", "grade": 1}, {"id": "1106", "name": "박은찬", "grade": 1}, {"id": "1208", "name": "김지후", "grade": 1}, {"id": "1212", "name": "양하율", "grade": 1}, {"id": "1222", "name": "최준범", "grade": 1}, {"id": "1306", "name": "김준용", "grade": 1}, {"id": "1303", "name": "고대현", "grade": 1}, {"id": "1401", "name": "권준휘", "grade": 1}, {"id": "1403", "name": "김유민", "grade": 1}, {"id": "1408", "name": "서준서", "grade": 1}, {"id": "1517", "name": "오승하", "grade": 1}, {"id": "1518", "name": "이상원", "grade": 1}, {"id": "1522", "name": "차준후", "grade": 1}, {"id": "1612", "name": "서승현", "grade": 1}, {"id": "1619", "name": "조준영", "grade": 1}, {"id": "1622", "name": "", "grade": 1}, {"id": "3109", "name": "문채민", "grade": 3}, {"id": "3216", "name": "정재훈", "grade": 3}, {"id": "3407", "name": "김지후", "grade": 3}, {"id": "3315", "name": "심주호", "grade": 3}, {"id": "3501", "name": "강민준", "grade": 3}, {"id": "3624", "name": "최준혁", "grade": 3}]}, {"course": "임상의학 전문가B반", "classroom": "2-6반", "students": [{"id": "2111", "name": "문경록", "grade": 2}, {"id": "2117", "name": "이도윤", "grade": 2}, {"id": "2125", "name": "허재원", "grade": 2}, {"id": "2202", "name": "고송원", "grade": 2}, {"id": "2206", "name": "김도균", "grade": 2}, {"id": "2214", "name": "유예준", "grade": 2}, {"id": "2304", "name": "김강희", "grade": 2}, {"id": "2312", "name": "백인수", "grade": 2}, {"id": "2324", "name": "홍윤우", "grade": 2}, {"id": "2410", "name": "박재흠", "grade": 2}, {"id": "2416", "name": "우병훈", "grade": 2}, {"id": "2420", "name": "임시온", "grade": 2}, {"id": "2513", "name": "이창민", "grade": 2}, {"id": "2502", "name": "김경목", "grade": 2}, {"id": "2510", "name": "석유준", "grade": 2}, {"id": "2610", "name": "김태윤", "grade": 2}, {"id": "2611", "name": "김희민", "grade": 2}, {"id": "2601", "name": "강동식", "grade": 2}, {"id": "3121", "name": "진재민", "grade": 3}, {"id": "3219", "name": "진승현", "grade": 3}, {"id": "3403", "name": "김민준", "grade": 3}, {"id": "3324", "name": "한상훈", "grade": 3}, {"id": "3522", "name": "최선민", "grade": 3}, {"id": "3623", "name": "최윤성", "grade": 3}]}, {"course": "인공지능 소프트웨어 개발자", "classroom": "3-1반", "students": [{"id": "1113", "name": "유대건", "grade": 1}, {"id": "1223", "name": "최지훈", "grade": 1}, {"id": "1305", "name": "김민준", "grade": 1}, {"id": "1415", "name": "이준석", "grade": 1}, {"id": "1501", "name": "김건호", "grade": 1}, {"id": "1605", "name": "김민재", "grade": 1}, {"id": "2122", "name": "정원일", "grade": 2}, {"id": "2215", "name": "유현준", "grade": 2}, {"id": "2301", "name": "KHEGAI ALEKSEI", "grade": 2}, {"id": "2402", "name": "강민재", "grade": 2}, {"id": "2507", "name": "박지훈", "grade": 2}, {"id": "2620", "name": "정동욱", "grade": 2}, {"id": "3102", "name": "김명신", "grade": 3}, {"id": "3206", "name": "민세연", "grade": 3}, {"id": "3214", "name": "이승민", "grade": 3}, {"id": "3401", "name": "김민규", "grade": 3}, {"id": "3423", "name": "최원혁", "grade": 3}, {"id": "3308", "name": "나현중", "grade": 3}, {"id": "3321", "name": "조승원", "grade": 3}, {"id": "3502", "name": "김민찬", "grade": 3}, {"id": "3516", "name": "이승준", "grade": 3}, {"id": "3618", "name": "임주완", "grade": 3}, {"id": "3610", "name": "배준영", "grade": 3}]}, {"course": "자율주행 시스템 엔지니어", "classroom": "3-2반", "students": [{"id": "1114", "name": "윤예준", "grade": 1}, {"id": "1221", "name": "정성엽", "grade": 1}, {"id": "1316", "name": "엄영균", "grade": 1}, {"id": "1402", "name": "김수영", "grade": 1}, {"id": "1507", "name": "김태용", "grade": 1}, {"id": "1614", "name": "유선우", "grade": 1}, {"id": "2106", "name": "김승범", "grade": 2}, {"id": "2211", "name": "박경빈", "grade": 2}, {"id": "2318", "name": "이태윤", "grade": 2}, {"id": "2412", "name": "서효민", "grade": 2}, {"id": "2517", "name": "정우성", "grade": 2}, {"id": "2603", "name": "강두호", "grade": 2}, {"id": "3112", "name": "변휘승", "grade": 3}, {"id": "3119", "name": "조은율", "grade": 3}, {"id": "3207", "name": "박준서", "grade": 3}, {"id": "3202", "name": "김문식", "grade": 3}, {"id": "3417", "name": "이지호", "grade": 3}, {"id": "3418", "name": "이현석", "grade": 3}, {"id": "3303", "name": "김대현", "grade": 3}, {"id": "3323", "name": "최은성", "grade": 3}, {"id": "3503", "name": "김인찬", "grade": 3}, {"id": "3517", "name": "이영재", "grade": 3}, {"id": "3619", "name": "조권", "grade": 3}, {"id": "3621", "name": "천호경", "grade": 3}]}, {"course": "소프트웨어 프로그래밍 전문가", "classroom": "3-3반", "students": [{"id": "1101", "name": "고태현", "grade": 1}, {"id": "1214", "name": "오지원", "grade": 1}, {"id": "1307", "name": "김태윤", "grade": 1}, {"id": "1410", "name": "신강민", "grade": 1}, {"id": "1508", "name": "김태현", "grade": 1}, {"id": "1613", "name": "손윤성", "grade": 1}, {"id": "2124", "name": "주현수", "grade": 2}, {"id": "2203", "name": "공민석", "grade": 2}, {"id": "2322", "name": "정유찬", "grade": 2}, {"id": "2403", "name": "공재윤", "grade": 2}, {"id": "2508", "name": "배서현", "grade": 2}, {"id": "2618", "name": "이찬섭", "grade": 2}, {"id": "3110", "name": "박준수", "grade": 3}, {"id": "3113", "name": "유예상", "grade": 3}, {"id": "3212", "name": "이대영", "grade": 3}, {"id": "3211", "name": "윤우진", "grade": 3}, {"id": "3422", "name": "최민성", "grade": 3}, {"id": "3402", "name": "김민제", "grade": 3}, {"id": "3301", "name": "권민혁", "grade": 3}, {"id": "3305", "name": "김상록", "grade": 3}, {"id": "3505", "name": "김태왕", "grade": 3}, {"id": "3506", "name": "박준석", "grade": 3}, {"id": "3605", "name": "김태원", "grade": 3}, {"id": "3615", "name": "이원영", "grade": 3}]}, {"course": "지능형 로봇 제어 엔지니어", "classroom": "3-4반", "students": [{"id": "1119", "name": "진준호", "grade": 1}, {"id": "1210", "name": "송지한", "grade": 1}, {"id": "1311", "name": "박민세", "grade": 1}, {"id": "1404", "name": "김지원", "grade": 1}, {"id": "1504", "name": "김시훈", "grade": 1}, {"id": "1606", "name": "김준우", "grade": 1}, {"id": "2109", "name": "김한재", "grade": 2}, {"id": "2217", "name": "이정훈", "grade": 2}, {"id": "2306", "name": "김민재", "grade": 2}, {"id": "2407", "name": "김지후", "grade": 2}, {"id": "2521", "name": "진성현", "grade": 2}, {"id": "3106", "name": "김정훈", "grade": 3}, {"id": "3123", "name": "최수훈", "grade": 3}, {"id": "3204", "name": "김성주", "grade": 3}, {"id": "3215", "name": "이준해", "grade": 3}, {"id": "3419", "name": "장태빈", "grade": 3}, {"id": "3408", "name": "김태헌", "grade": 3}, {"id": "3306", "name": "김송규", "grade": 3}, {"id": "3320", "name": "정한준", "grade": 3}, {"id": "3521", "name": "조민재", "grade": 3}, {"id": "3609", "name": "박현성", "grade": 3}, {"id": "3611", "name": "서영진", "grade": 3}]}, {"course": "IoT 임베디드 시스템 개발자", "classroom": "3-5반", "students": [{"id": "1118", "name": "조혜성", "grade": 1}, {"id": "1220", "name": "장석원", "grade": 1}, {"id": "1310", "name": "박경빈", "grade": 1}, {"id": "2123", "name": "정채운", "grade": 2}, {"id": "2213", "name": "오동현", "grade": 2}, {"id": "2309", "name": "김여준", "grade": 2}, {"id": "2421", "name": "전현수", "grade": 2}, {"id": "2523", "name": "허승연", "grade": 2}, {"id": "2605", "name": "구민찬", "grade": 2}, {"id": "3105", "name": "김우진", "grade": 3}, {"id": "3116", "name": "장준호", "grade": 3}, {"id": "3205", "name": "김재윤", "grade": 3}, {"id": "3221", "name": "차윤호", "grade": 3}, {"id": "3411", "name": "서준우", "grade": 3}, {"id": "3410", "name": "배재현", "grade": 3}, {"id": "3311", "name": "박헌주", "grade": 3}, {"id": "3319", "name": "이종훈", "grade": 3}, {"id": "3510", "name": "신준혁", "grade": 3}, {"id": "3520", "name": "장지훈", "grade": 3}, {"id": "3603", "name": "김민석", "grade": 3}, {"id": "3607", "name": "박준휘", "grade": 3}]}, {"course": "빅데이터 프로그램 개발자", "classroom": "3-6반", "students": [{"id": "1109", "name": "변상준", "grade": 1}, {"id": "1206", "name": "김대현", "grade": 1}, {"id": "1312", "name": "박지환", "grade": 1}, {"id": "1602", "name": "강주성", "grade": 1}, {"id": "2120", "name": "이지성", "grade": 2}, {"id": "2209", "name": "김범준", "grade": 2}, {"id": "2316", "name": "윤태원", "grade": 2}, {"id": "2418", "name": "이수민", "grade": 2}, {"id": "2524", "name": "황지훈", "grade": 2}, {"id": "2622", "name": "최시우", "grade": 2}, {"id": "3120", "name": "조준의", "grade": 3}, {"id": "3114", "name": "유태영", "grade": 3}, {"id": "3218", "name": "조재희", "grade": 3}, {"id": "3223", "name": "한민재", "grade": 3}, {"id": "3424", "name": "최현성", "grade": 3}, {"id": "3415", "name": "이동혁", "grade": 3}, {"id": "3307", "name": "김재영", "grade": 3}, {"id": "3322", "name": "지명준", "grade": 3}, {"id": "3504", "name": "김지민", "grade": 3}, {"id": "3512", "name": "유선후", "grade": 3}, {"id": "3604", "name": "김준우", "grade": 3}, {"id": "3622", "name": "최예승", "grade": 3}]}]}, "3": {"label": "3강 (5교시)", "ampm": "오후", "courses": [{"course": "간호학과", "classroom": "1-1반", "students": [{"id": "1106", "name": "박은찬", "grade": 1}, {"id": "1113", "name": "유대건", "grade": 1}, {"id": "1202", "name": "구혜윤", "grade": 1}, {"id": "1217", "name": "임도명", "grade": 1}, {"id": "1306", "name": "김준용", "grade": 1}, {"id": "1305", "name": "김민준", "grade": 1}, {"id": "1407", "name": "박지환", "grade": 1}, {"id": "1412", "name": "윤찬웅", "grade": 1}, {"id": "1514", "name": "변승수", "grade": 1}, {"id": "1505", "name": "김준영", "grade": 1}, {"id": "1608", "name": "김현승", "grade": 1}, {"id": "1617", "name": "임섭준", "grade": 1}, {"id": "2111", "name": "문경록", "grade": 2}, {"id": "2117", "name": "이도윤", "grade": 2}, {"id": "2202", "name": "고송원", "grade": 2}, {"id": "2218", "name": "이태규", "grade": 2}, {"id": "2310", "name": "김태원", "grade": 2}, {"id": "2323", "name": "최인준", "grade": 2}, {"id": "2405", "name": "김민준", "grade": 2}, {"id": "2409", "name": "박장호", "grade": 2}, {"id": "2519", "name": "제은찬", "grade": 2}, {"id": "2514", "name": "장연오", "grade": 2}, {"id": "2602", "name": "강동훈", "grade": 2}, {"id": "2606", "name": "김민재", "grade": 2}]}, {"course": "게임학과", "classroom": "2-1반", "students": [{"id": "1103", "name": "김민찬", "grade": 1}, {"id": "1111", "name": "안도현", "grade": 1}, {"id": "1210", "name": "송지한", "grade": 1}, {"id": "1221", "name": "정성엽", "grade": 1}, {"id": "1307", "name": "김태윤", "grade": 1}, {"id": "1315", "name": "안수환", "grade": 1}, {"id": "1406", "name": "박은우", "grade": 1}, {"id": "1409", "name": "손주형", "grade": 1}, {"id": "1516", "name": "신주영", "grade": 1}, {"id": "1521", "name": "정차빈", "grade": 1}, {"id": "1612", "name": "서승현", "grade": 1}, {"id": "1606", "name": "김준우", "grade": 1}, {"id": "2114", "name": "손창수", "grade": 2}, {"id": "2101", "name": "강주환", "grade": 2}, {"id": "2216", "name": "윤대한", "grade": 2}, {"id": "2217", "name": "이정훈", "grade": 2}, {"id": "2315", "name": "윤지후", "grade": 2}, {"id": "2309", "name": "김여준", "grade": 2}, {"id": "2413", "name": "성지원", "grade": 2}, {"id": "2406", "name": "김민혁", "grade": 2}, {"id": "2501", "name": "MIRONOV DMITRIY", "grade": 2}, {"id": "2520", "name": "조성훈", "grade": 2}, {"id": "2601", "name": "강동식", "grade": 2}, {"id": "2604", "name": "고원준", "grade": 2}]}, {"course": "경영학부", "classroom": "1-2반", "students": [{"id": "1110", "name": "심정원", "grade": 1}, {"id": "1117", "name": "정동근", "grade": 1}, {"id": "1203", "name": "권동호", "grade": 1}, {"id": "1219", "name": "장무창", "grade": 1}, {"id": "1313", "name": "박태민", "grade": 1}, {"id": "1317", "name": "유하랑", "grade": 1}, {"id": "1410", "name": "신강민", "grade": 1}, {"id": "1423", "name": "허동혁", "grade": 1}, {"id": "1512", "name": "방준우", "grade": 1}, {"id": "1520", "name": "장민서", "grade": 1}, {"id": "1613", "name": "손윤성", "grade": 1}, {"id": "1620", "name": "진승찬", "grade": 1}, {"id": "2124", "name": "주현수", "grade": 2}, {"id": "2112", "name": "박정호", "grade": 2}, {"id": "2206", "name": "김도균", "grade": 2}, {"id": "2221", "name": "장근영", "grade": 2}, {"id": "2302", "name": "강무근", "grade": 2}, {"id": "2317", "name": "이영준", "grade": 2}, {"id": "2403", "name": "공재윤", "grade": 2}, {"id": "2407", "name": "김지후", "grade": 2}, {"id": "2511", "name": "유현성", "grade": 2}, {"id": "2516", "name": "정승원", "grade": 2}, {"id": "2622", "name": "최시우", "grade": 2}, {"id": "2624", "name": "최정환", "grade": 2}]}, {"course": "문화콘텐츠학과", "classroom": "2-2반", "students": [{"id": "1118", "name": "조혜성", "grade": 1}, {"id": "1116", "name": "이호준", "grade": 1}, {"id": "1212", "name": "양하율", "grade": 1}, {"id": "1216", "name": "이환희", "grade": 1}, {"id": "1310", "name": "박경빈", "grade": 1}, {"id": "1312", "name": "박지환", "grade": 1}, {"id": "1401", "name": "권준휘", "grade": 1}, {"id": "1418", "name": "정현우", "grade": 1}, {"id": "1508", "name": "김태현", "grade": 1}, {"id": "1605", "name": "김민재", "grade": 1}, {"id": "1607", "name": "김태현", "grade": 1}, {"id": "2104", "name": "김민재", "grade": 2}, {"id": "2123", "name": "정채운", "grade": 2}, {"id": "2210", "name": "류지훈", "grade": 2}, {"id": "2213", "name": "오동현", "grade": 2}, {"id": "2321", "name": "장호건", "grade": 2}, {"id": "2320", "name": "장민식", "grade": 2}, {"id": "2424", "name": "지경원", "grade": 2}, {"id": "2417", "name": "이민균", "grade": 2}, {"id": "2517", "name": "정우성", "grade": 2}, {"id": "2509", "name": "배창민", "grade": 2}, {"id": "2609", "name": "김승현", "grade": 2}, {"id": "2615", "name": "송건우", "grade": 2}]}, {"course": "물리치료학과", "classroom": "1-3반", "students": [{"id": "1120", "name": "최상진", "grade": 1}, {"id": "1104", "name": "김주훈", "grade": 1}, {"id": "1208", "name": "김지후", "grade": 1}, {"id": "1214", "name": "오지원", "grade": 1}, {"id": "1318", "name": "윤재현", "grade": 1}, {"id": "1319", "name": "이재민", "grade": 1}, {"id": "1405", "name": "박시후", "grade": 1}, {"id": "1417", "name": "전민준", "grade": 1}, {"id": "1501", "name": "김건호", "grade": 1}, {"id": "1506", "name": "김지헌", "grade": 1}, {"id": "1601", "name": "강우진", "grade": 1}, {"id": "1623", "name": "홍서윤", "grade": 1}, {"id": "2125", "name": "허재원", "grade": 2}, {"id": "2116", "name": "안용호", "grade": 2}, {"id": "2205", "name": "김남우", "grade": 2}, {"id": "2208", "name": "김민욱", "grade": 2}, {"id": "2311", "name": "김태윤", "grade": 2}, {"id": "2314", "name": "양성철", "grade": 2}, {"id": "2412", "name": "서효민", "grade": 2}, {"id": "2419", "name": "이승찬", "grade": 2}, {"id": "2506", "name": "박건희", "grade": 2}, {"id": "2522", "name": "최원석", "grade": 2}, {"id": "2607", "name": "김민준", "grade": 2}, {"id": "2608", "name": "김승민", "grade": 2}]}, {"course": "반려동물보건학과", "classroom": "2-3반", "students": [{"id": "1101", "name": "고태현", "grade": 1}, {"id": "1107", "name": "배재현", "grade": 1}, {"id": "1213", "name": "오준혁", "grade": 1}, {"id": "1215", "name": "이우진", "grade": 1}, {"id": "1304", "name": "곽민성", "grade": 1}, {"id": "1311", "name": "박민세", "grade": 1}, {"id": "1402", "name": "김수영", "grade": 1}, {"id": "1422", "name": "하승민", "grade": 1}, {"id": "1502", "name": "김광현", "grade": 1}, {"id": "1509", "name": "문지호", "grade": 1}, {"id": "1615", "name": "이승현", "grade": 1}, {"id": "2119", "name": "이지민", "grade": 2}, {"id": "2107", "name": "김윤우", "grade": 2}, {"id": "2211", "name": "박경빈", "grade": 2}, {"id": "2209", "name": "김범준", "grade": 2}, {"id": "2318", "name": "이태윤", "grade": 2}, {"id": "2307", "name": "김석현", "grade": 2}, {"id": "2420", "name": "임시온", "grade": 2}, {"id": "2422", "name": "정민서", "grade": 2}, {"id": "2521", "name": "진성현", "grade": 2}, {"id": "2513", "name": "이창민", "grade": 2}, {"id": "2603", "name": "강두호", "grade": 2}, {"id": "2616", "name": "안태호", "grade": 2}]}, {"course": "방사선학과", "classroom": "1-4반", "students": [{"id": "1102", "name": "김동한", "grade": 1}, {"id": "1211", "name": "안성준", "grade": 1}, {"id": "1218", "name": "임태윤", "grade": 1}, {"id": "1302", "name": "강지우", "grade": 1}, {"id": "1320", "name": "전재효", "grade": 1}, {"id": "1403", "name": "김유민", "grade": 1}, {"id": "1408", "name": "서준서", "grade": 1}, {"id": "1517", "name": "오승하", "grade": 1}, {"id": "1515", "name": "손승현", "grade": 1}, {"id": "1603", "name": "김동현", "grade": 1}, {"id": "1618", "name": "조민우", "grade": 1}, {"id": "2102", "name": "구준서", "grade": 2}, {"id": "2113", "name": "서민범", "grade": 2}, {"id": "2224", "name": "허수종", "grade": 2}, {"id": "2214", "name": "유예준", "grade": 2}, {"id": "2305", "name": "김동현", "grade": 2}, {"id": "2316", "name": "윤태원", "grade": 2}, {"id": "2415", "name": "신수민", "grade": 2}, {"id": "2423", "name": "조현우", "grade": 2}, {"id": "2502", "name": "김경목", "grade": 2}, {"id": "2510", "name": "석유준", "grade": 2}, {"id": "2617", "name": "이동훈", "grade": 2}]}, {"course": "사회복지학과", "classroom": "2-4반", "students": [{"id": "1109", "name": "변상준", "grade": 1}, {"id": "1112", "name": "엄장원", "grade": 1}, {"id": "1220", "name": "장석원", "grade": 1}, {"id": "1207", "name": "김민성", "grade": 1}, {"id": "1301", "name": "강대웅", "grade": 1}, {"id": "1309", "name": "김형진", "grade": 1}, {"id": "1404", "name": "김지원", "grade": 1}, {"id": "1411", "name": "심민성", "grade": 1}, {"id": "1518", "name": "이상원", "grade": 1}, {"id": "1522", "name": "차준후", "grade": 1}, {"id": "1611", "name": "서승우", "grade": 1}, {"id": "1621", "name": "최선우", "grade": 1}, {"id": "2122", "name": "정원일", "grade": 2}, {"id": "2106", "name": "김승범", "grade": 2}, {"id": "2203", "name": "공민석", "grade": 2}, {"id": "2223", "name": "천시우", "grade": 2}, {"id": "2306", "name": "김민재", "grade": 2}, {"id": "2308", "name": "김억", "grade": 2}, {"id": "2418", "name": "이수민", "grade": 2}, {"id": "2404", "name": "김경준", "grade": 2}, {"id": "2504", "name": "김성욱", "grade": 2}, {"id": "2518", "name": "정현준", "grade": 2}, {"id": "2605", "name": "구민찬", "grade": 2}, {"id": "2611", "name": "김희민", "grade": 2}]}, {"course": "약학과", "classroom": "1-5반", "students": [{"id": "1119", "name": "진준호", "grade": 1}, {"id": "1201", "name": "구하람", "grade": 1}, {"id": "1303", "name": "고대현", "grade": 1}, {"id": "1413", "name": "이시훈", "grade": 1}, {"id": "1421", "name": "최예성", "grade": 1}, {"id": "1507", "name": "김태용", "grade": 1}, {"id": "1609", "name": "박건우", "grade": 1}, {"id": "1616", "name": "이영훈", "grade": 1}, {"id": "2120", "name": "이지성", "grade": 2}, {"id": "2105", "name": "김성민", "grade": 2}, {"id": "2222", "name": "조은성", "grade": 2}, {"id": "2207", "name": "김민성", "grade": 2}, {"id": "2324", "name": "홍윤우", "grade": 2}, {"id": "2304", "name": "김강희", "grade": 2}, {"id": "2416", "name": "우병훈", "grade": 2}, {"id": "2410", "name": "박재흠", "grade": 2}, {"id": "2507", "name": "박지훈", "grade": 2}, {"id": "2515", "name": "정상준", "grade": 2}, {"id": "2614", "name": "박종인", "grade": 2}, {"id": "2619", "name": "장주호", "grade": 2}]}, {"course": "작업치료학과", "classroom": "2-5반", "students": [{"id": "1115", "name": "이준영", "grade": 1}, {"id": "1204", "name": "김건우", "grade": 1}, {"id": "1206", "name": "김대현", "grade": 1}, {"id": "1308", "name": "김하겸", "grade": 1}, {"id": "1323", "name": "진민승", "grade": 1}, {"id": "1420", "name": "조영승", "grade": 1}, {"id": "1510", "name": "박서준", "grade": 1}, {"id": "1519", "name": "이승현", "grade": 1}, {"id": "1614", "name": "유선우", "grade": 1}, {"id": "2108", "name": "김종담", "grade": 2}, {"id": "2109", "name": "김한재", "grade": 2}, {"id": "2220", "name": "임환석", "grade": 2}, {"id": "2201", "name": "강태윤", "grade": 2}, {"id": "2313", "name": "신환주", "grade": 2}, {"id": "2301", "name": "KHEGAI ALEKSEI", "grade": 2}, {"id": "2402", "name": "강민재", "grade": 2}, {"id": "2401", "name": "NGUYEN TRUONG MINH DUC", "grade": 2}, {"id": "2505", "name": "김지호", "grade": 2}, {"id": "2524", "name": "황지훈", "grade": 2}, {"id": "2613", "name": "박동현", "grade": 2}, {"id": "2621", "name": "진주현", "grade": 2}]}, {"course": "전기,배터리공학과", "classroom": "1-6반", "students": [{"id": "1114", "name": "윤예준", "grade": 1}, {"id": "1121", "name": "허영환", "grade": 1}, {"id": "1222", "name": "최준범", "grade": 1}, {"id": "1223", "name": "최지훈", "grade": 1}, {"id": "1316", "name": "엄영균", "grade": 1}, {"id": "1322", "name": "주유찬", "grade": 1}, {"id": "1416", "name": "이지훈", "grade": 1}, {"id": "1419", "name": "정희력", "grade": 1}, {"id": "1504", "name": "김시훈", "grade": 1}, {"id": "1513", "name": "백경립", "grade": 1}, {"id": "1610", "name": "박성우", "grade": 1}, {"id": "1602", "name": "강주성", "grade": 1}, {"id": "2110", "name": "김한준", "grade": 2}, {"id": "2118", "name": "이승민", "grade": 2}, {"id": "2219", "name": "이현우", "grade": 2}, {"id": "2212", "name": "박지성", "grade": 2}, {"id": "2319", "name": "임준형", "grade": 2}, {"id": "2303", "name": "강민규", "grade": 2}, {"id": "2411", "name": "박현빈", "grade": 2}, {"id": "2421", "name": "전현수", "grade": 2}, {"id": "2508", "name": "배서현", "grade": 2}, {"id": "2512", "name": "이용준", "grade": 2}, {"id": "2618", "name": "이찬섭", "grade": 2}, {"id": "2620", "name": "정동욱", "grade": 2}]}, {"course": "혁신신약, 제약공학부", "classroom": "2-6반", "students": [{"id": "1108", "name": "백지원", "grade": 1}, {"id": "1122", "name": "홍우진", "grade": 1}, {"id": "1321", "name": "정세운", "grade": 1}, {"id": "1415", "name": "이준석", "grade": 1}, {"id": "1503", "name": "김성진", "grade": 1}, {"id": "1511", "name": "박준서", "grade": 1}, {"id": "1619", "name": "조준영", "grade": 1}, {"id": "1604", "name": "김민규", "grade": 1}, {"id": "2115", "name": "신채훈", "grade": 2}, {"id": "2121", "name": "정세윤", "grade": 2}, {"id": "2204", "name": "구현우", "grade": 2}, {"id": "2215", "name": "유현준", "grade": 2}, {"id": "2312", "name": "백인수", "grade": 2}, {"id": "2322", "name": "정유찬", "grade": 2}, {"id": "2408", "name": "박신우", "grade": 2}, {"id": "2414", "name": "신민준", "grade": 2}, {"id": "2503", "name": "김민준", "grade": 2}, {"id": "2523", "name": "허승연", "grade": 2}, {"id": "2610", "name": "김태윤", "grade": 2}, {"id": "2623", "name": "최윤서", "grade": 2}]}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}]}, "4": {"label": "4강 (6교시)", "ampm": "오후", "courses": [{"course": "간호학과", "classroom": "1-1반", "students": [{"id": "1116", "name": "이호준", "grade": 1}, {"id": "1220", "name": "장석원", "grade": 1}, {"id": "1221", "name": "정성엽", "grade": 1}, {"id": "1320", "name": "전재효", "grade": 1}, {"id": "1323", "name": "진민승", "grade": 1}, {"id": "1410", "name": "신강민", "grade": 1}, {"id": "1423", "name": "허동혁", "grade": 1}, {"id": "1510", "name": "박서준", "grade": 1}, {"id": "1520", "name": "장민서", "grade": 1}, {"id": "1614", "name": "유선우", "grade": 1}, {"id": "1612", "name": "서승현", "grade": 1}, {"id": "2105", "name": "김성민", "grade": 2}, {"id": "2107", "name": "김윤우", "grade": 2}, {"id": "2214", "name": "유예준", "grade": 2}, {"id": "2224", "name": "허수종", "grade": 2}, {"id": "2304", "name": "김강희", "grade": 2}, {"id": "2320", "name": "장민식", "grade": 2}, {"id": "2412", "name": "서효민", "grade": 2}, {"id": "2414", "name": "신민준", "grade": 2}, {"id": "2502", "name": "김경목", "grade": 2}, {"id": "2510", "name": "석유준", "grade": 2}, {"id": "2608", "name": "김승민", "grade": 2}, {"id": "2619", "name": "장주호", "grade": 2}]}, {"course": "게임학과", "classroom": "2-1반", "students": [{"id": "1101", "name": "고태현", "grade": 1}, {"id": "1118", "name": "조혜성", "grade": 1}, {"id": "1214", "name": "오지원", "grade": 1}, {"id": "1211", "name": "안성준", "grade": 1}, {"id": "1303", "name": "고대현", "grade": 1}, {"id": "1312", "name": "박지환", "grade": 1}, {"id": "1403", "name": "김유민", "grade": 1}, {"id": "1408", "name": "서준서", "grade": 1}, {"id": "1505", "name": "김준영", "grade": 1}, {"id": "1514", "name": "변승수", "grade": 1}, {"id": "1608", "name": "김현승", "grade": 1}, {"id": "1615", "name": "이승현", "grade": 1}, {"id": "2119", "name": "이지민", "grade": 2}, {"id": "2120", "name": "이지성", "grade": 2}, {"id": "2204", "name": "구현우", "grade": 2}, {"id": "2218", "name": "이태규", "grade": 2}, {"id": "2321", "name": "장호건", "grade": 2}, {"id": "2317", "name": "이영준", "grade": 2}, {"id": "2409", "name": "박장호", "grade": 2}, {"id": "2408", "name": "박신우", "grade": 2}, {"id": "2508", "name": "배서현", "grade": 2}, {"id": "2517", "name": "정우성", "grade": 2}, {"id": "2605", "name": "구민찬", "grade": 2}, {"id": "2609", "name": "김승현", "grade": 2}]}, {"course": "경영학부", "classroom": "1-2반", "students": [{"id": "1104", "name": "김주훈", "grade": 1}, {"id": "1109", "name": "변상준", "grade": 1}, {"id": "1206", "name": "김대현", "grade": 1}, {"id": "1204", "name": "김건우", "grade": 1}, {"id": "1309", "name": "김형진", "grade": 1}, {"id": "1301", "name": "강대웅", "grade": 1}, {"id": "1415", "name": "이준석", "grade": 1}, {"id": "1501", "name": "김건호", "grade": 1}, {"id": "1617", "name": "임섭준", "grade": 1}, {"id": "1621", "name": "최선우", "grade": 1}, {"id": "2106", "name": "김승범", "grade": 2}, {"id": "2122", "name": "정원일", "grade": 2}, {"id": "2223", "name": "천시우", "grade": 2}, {"id": "2215", "name": "유현준", "grade": 2}, {"id": "2318", "name": "이태윤", "grade": 2}, {"id": "2310", "name": "김태원", "grade": 2}, {"id": "2410", "name": "박재흠", "grade": 2}, {"id": "2415", "name": "신수민", "grade": 2}, {"id": "2521", "name": "진성현", "grade": 2}, {"id": "2506", "name": "박건희", "grade": 2}, {"id": "2613", "name": "박동현", "grade": 2}, {"id": "2621", "name": "진주현", "grade": 2}]}, {"course": "문화콘텐츠학과", "classroom": "2-2반", "students": [{"id": "1115", "name": "이준영", "grade": 1}, {"id": "1112", "name": "엄장원", "grade": 1}, {"id": "1217", "name": "임도명", "grade": 1}, {"id": "1313", "name": "박태민", "grade": 1}, {"id": "1302", "name": "강지우", "grade": 1}, {"id": "1404", "name": "김지원", "grade": 1}, {"id": "1411", "name": "심민성", "grade": 1}, {"id": "1506", "name": "김지헌", "grade": 1}, {"id": "1521", "name": "정차빈", "grade": 1}, {"id": "1620", "name": "진승찬", "grade": 1}, {"id": "1603", "name": "김동현", "grade": 1}, {"id": "2118", "name": "이승민", "grade": 2}, {"id": "2124", "name": "주현수", "grade": 2}, {"id": "2206", "name": "김도균", "grade": 2}, {"id": "2203", "name": "공민석", "grade": 2}, {"id": "2302", "name": "강무근", "grade": 2}, {"id": "2309", "name": "김여준", "grade": 2}, {"id": "2406", "name": "김민혁", "grade": 2}, {"id": "2418", "name": "이수민", "grade": 2}, {"id": "2504", "name": "김성욱", "grade": 2}, {"id": "2514", "name": "장연오", "grade": 2}, {"id": "2622", "name": "최시우", "grade": 2}, {"id": "2624", "name": "최정환", "grade": 2}]}, {"course": "물리치료학과", "classroom": "1-3반", "students": [{"id": "1117", "name": "정동근", "grade": 1}, {"id": "1121", "name": "허영환", "grade": 1}, {"id": "1202", "name": "구혜윤", "grade": 1}, {"id": "1223", "name": "최지훈", "grade": 1}, {"id": "1308", "name": "김하겸", "grade": 1}, {"id": "1317", "name": "유하랑", "grade": 1}, {"id": "1412", "name": "윤찬웅", "grade": 1}, {"id": "1420", "name": "조영승", "grade": 1}, {"id": "1517", "name": "오승하", "grade": 1}, {"id": "1502", "name": "김광현", "grade": 1}, {"id": "1610", "name": "박성우", "grade": 1}, {"id": "1602", "name": "강주성", "grade": 1}, {"id": "2104", "name": "김민재", "grade": 2}, {"id": "2102", "name": "구준서", "grade": 2}, {"id": "2216", "name": "윤대한", "grade": 2}, {"id": "2217", "name": "이정훈", "grade": 2}, {"id": "2315", "name": "윤지후", "grade": 2}, {"id": "2305", "name": "김동현", "grade": 2}, {"id": "2401", "name": "NGUYEN TRUONG MINH DUC", "grade": 2}, {"id": "2405", "name": "김민준", "grade": 2}, {"id": "2507", "name": "박지훈", "grade": 2}, {"id": "2505", "name": "김지호", "grade": 2}, {"id": "2606", "name": "김민재", "grade": 2}, {"id": "2610", "name": "김태윤", "grade": 2}]}, {"course": "반려동물보건학과", "classroom": "2-3반", "students": [{"id": "1108", "name": "백지원", "grade": 1}, {"id": "1122", "name": "홍우진", "grade": 1}, {"id": "1203", "name": "권동호", "grade": 1}, {"id": "1208", "name": "김지후", "grade": 1}, {"id": "1319", "name": "이재민", "grade": 1}, {"id": "1315", "name": "안수환", "grade": 1}, {"id": "1416", "name": "이지훈", "grade": 1}, {"id": "1419", "name": "정희력", "grade": 1}, {"id": "1516", "name": "신주영", "grade": 1}, {"id": "1601", "name": "강우진", "grade": 1}, {"id": "1623", "name": "홍서윤", "grade": 1}, {"id": "2114", "name": "손창수", "grade": 2}, {"id": "2108", "name": "김종담", "grade": 2}, {"id": "2220", "name": "임환석", "grade": 2}, {"id": "2201", "name": "강태윤", "grade": 2}, {"id": "2311", "name": "김태윤", "grade": 2}, {"id": "2314", "name": "양성철", "grade": 2}, {"id": "2403", "name": "공재윤", "grade": 2}, {"id": "2407", "name": "김지후", "grade": 2}, {"id": "2501", "name": "MIRONOV DMITRIY", "grade": 2}, {"id": "2520", "name": "조성훈", "grade": 2}, {"id": "2601", "name": "강동식", "grade": 2}, {"id": "2607", "name": "김민준", "grade": 2}]}, {"course": "방사선학과", "classroom": "1-4반", "students": [{"id": "1120", "name": "최상진", "grade": 1}, {"id": "1110", "name": "심정원", "grade": 1}, {"id": "1201", "name": "구하람", "grade": 1}, {"id": "1213", "name": "오준혁", "grade": 1}, {"id": "1307", "name": "김태윤", "grade": 1}, {"id": "1401", "name": "권준휘", "grade": 1}, {"id": "1511", "name": "박준서", "grade": 1}, {"id": "1512", "name": "방준우", "grade": 1}, {"id": "1606", "name": "김준우", "grade": 1}, {"id": "2111", "name": "문경록", "grade": 2}, {"id": "2115", "name": "신채훈", "grade": 2}, {"id": "2202", "name": "고송원", "grade": 2}, {"id": "2213", "name": "오동현", "grade": 2}, {"id": "2324", "name": "홍윤우", "grade": 2}, {"id": "2312", "name": "백인수", "grade": 2}, {"id": "2402", "name": "강민재", "grade": 2}, {"id": "2413", "name": "성지원", "grade": 2}, {"id": "2512", "name": "이용준", "grade": 2}, {"id": "2523", "name": "허승연", "grade": 2}, {"id": "2618", "name": "이찬섭", "grade": 2}, {"id": "2620", "name": "정동욱", "grade": 2}]}, {"course": "사회복지학과", "classroom": "2-4반", "students": [{"id": "1114", "name": "윤예준", "grade": 1}, {"id": "1107", "name": "배재현", "grade": 1}, {"id": "1216", "name": "이환희", "grade": 1}, {"id": "1219", "name": "장무창", "grade": 1}, {"id": "1304", "name": "곽민성", "grade": 1}, {"id": "1306", "name": "김준용", "grade": 1}, {"id": "1405", "name": "박시후", "grade": 1}, {"id": "1417", "name": "전민준", "grade": 1}, {"id": "1513", "name": "백경립", "grade": 1}, {"id": "1507", "name": "김태용", "grade": 1}, {"id": "1605", "name": "김민재", "grade": 1}, {"id": "2123", "name": "정채운", "grade": 2}, {"id": "2112", "name": "박정호", "grade": 2}, {"id": "2210", "name": "류지훈", "grade": 2}, {"id": "2222", "name": "조은성", "grade": 2}, {"id": "2307", "name": "김석현", "grade": 2}, {"id": "2313", "name": "신환주", "grade": 2}, {"id": "2420", "name": "임시온", "grade": 2}, {"id": "2424", "name": "지경원", "grade": 2}, {"id": "2511", "name": "유현성", "grade": 2}, {"id": "2516", "name": "정승원", "grade": 2}, {"id": "2602", "name": "강동훈", "grade": 2}, {"id": "2623", "name": "최윤서", "grade": 2}]}, {"course": "약학과", "classroom": "1-5반", "students": [{"id": "1113", "name": "유대건", "grade": 1}, {"id": "1222", "name": "최준범", "grade": 1}, {"id": "1215", "name": "이우진", "grade": 1}, {"id": "1305", "name": "김민준", "grade": 1}, {"id": "1321", "name": "정세운", "grade": 1}, {"id": "1407", "name": "박지환", "grade": 1}, {"id": "1418", "name": "정현우", "grade": 1}, {"id": "1515", "name": "손승현", "grade": 1}, {"id": "1509", "name": "문지호", "grade": 1}, {"id": "1619", "name": "조준영", "grade": 1}, {"id": "1613", "name": "손윤성", "grade": 1}, {"id": "2117", "name": "이도윤", "grade": 2}, {"id": "2121", "name": "정세윤", "grade": 2}, {"id": "2209", "name": "김범준", "grade": 2}, {"id": "2211", "name": "박경빈", "grade": 2}, {"id": "2319", "name": "임준형", "grade": 2}, {"id": "2303", "name": "강민규", "grade": 2}, {"id": "2411", "name": "박현빈", "grade": 2}, {"id": "2419", "name": "이승찬", "grade": 2}, {"id": "2503", "name": "김민준", "grade": 2}, {"id": "2519", "name": "제은찬", "grade": 2}, {"id": "2617", "name": "이동훈", "grade": 2}]}, {"course": "작업치료학과", "classroom": "2-5반", "students": [{"id": "1102", "name": "김동한", "grade": 1}, {"id": "1207", "name": "김민성", "grade": 1}, {"id": "1318", "name": "윤재현", "grade": 1}, {"id": "1402", "name": "김수영", "grade": 1}, {"id": "1422", "name": "하승민", "grade": 1}, {"id": "1503", "name": "김성진", "grade": 1}, {"id": "1508", "name": "김태현", "grade": 1}, {"id": "1607", "name": "김태현", "grade": 1}, {"id": "1611", "name": "서승우", "grade": 1}, {"id": "2125", "name": "허재원", "grade": 2}, {"id": "2110", "name": "김한준", "grade": 2}, {"id": "2212", "name": "박지성", "grade": 2}, {"id": "2219", "name": "이현우", "grade": 2}, {"id": "2323", "name": "최인준", "grade": 2}, {"id": "2306", "name": "김민재", "grade": 2}, {"id": "2404", "name": "김경준", "grade": 2}, {"id": "2417", "name": "이민균", "grade": 2}, {"id": "2509", "name": "배창민", "grade": 2}, {"id": "2518", "name": "정현준", "grade": 2}, {"id": "2604", "name": "고원준", "grade": 2}, {"id": "2611", "name": "김희민", "grade": 2}]}, {"course": "전기,배터리공학과", "classroom": "1-6반", "students": [{"id": "1111", "name": "안도현", "grade": 1}, {"id": "1103", "name": "김민찬", "grade": 1}, {"id": "1218", "name": "임태윤", "grade": 1}, {"id": "1210", "name": "송지한", "grade": 1}, {"id": "1310", "name": "박경빈", "grade": 1}, {"id": "1311", "name": "박민세", "grade": 1}, {"id": "1406", "name": "박은우", "grade": 1}, {"id": "1409", "name": "손주형", "grade": 1}, {"id": "1518", "name": "이상원", "grade": 1}, {"id": "1522", "name": "차준후", "grade": 1}, {"id": "1604", "name": "김민규", "grade": 1}, {"id": "1618", "name": "조민우", "grade": 1}, {"id": "2101", "name": "강주환", "grade": 2}, {"id": "2113", "name": "서민범", "grade": 2}, {"id": "2221", "name": "장근영", "grade": 2}, {"id": "2208", "name": "김민욱", "grade": 2}, {"id": "2316", "name": "윤태원", "grade": 2}, {"id": "2322", "name": "정유찬", "grade": 2}, {"id": "2422", "name": "정민서", "grade": 2}, {"id": "2423", "name": "조현우", "grade": 2}, {"id": "2515", "name": "정상준", "grade": 2}, {"id": "2522", "name": "최원석", "grade": 2}, {"id": "2615", "name": "송건우", "grade": 2}, {"id": "2616", "name": "안태호", "grade": 2}]}, {"course": "혁신신약, 제약공학부", "classroom": "2-6반", "students": [{"id": "1119", "name": "진준호", "grade": 1}, {"id": "1106", "name": "박은찬", "grade": 1}, {"id": "1212", "name": "양하율", "grade": 1}, {"id": "1316", "name": "엄영균", "grade": 1}, {"id": "1322", "name": "주유찬", "grade": 1}, {"id": "1413", "name": "이시훈", "grade": 1}, {"id": "1421", "name": "최예성", "grade": 1}, {"id": "1504", "name": "김시훈", "grade": 1}, {"id": "1519", "name": "이승현", "grade": 1}, {"id": "1609", "name": "박건우", "grade": 1}, {"id": "1616", "name": "이영훈", "grade": 1}, {"id": "2116", "name": "안용호", "grade": 2}, {"id": "2109", "name": "김한재", "grade": 2}, {"id": "2207", "name": "김민성", "grade": 2}, {"id": "2205", "name": "김남우", "grade": 2}, {"id": "2301", "name": "KHEGAI ALEKSEI", "grade": 2}, {"id": "2308", "name": "김억", "grade": 2}, {"id": "2416", "name": "우병훈", "grade": 2}, {"id": "2421", "name": "전현수", "grade": 2}, {"id": "2513", "name": "이창민", "grade": 2}, {"id": "2524", "name": "황지훈", "grade": 2}, {"id": "2603", "name": "강두호", "grade": 2}, {"id": "2614", "name": "박종인", "grade": 2}]}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}, {"course": "", "classroom": "", "students": []}]}};
+
+const ROOMS = ["1-1반", "2-1반", "1-2반", "2-2반", "1-3반", "2-3반", "1-4반", "2-4반", "1-5반", "2-5반", "1-6반", "2-6반", "3-1반", "3-2반", "3-3반", "3-4반", "3-5반", "3-6반"];
+const AM_COURSES = ["디지털 미디어 콘텐츠 제작자A반", "디지털 미디어 콘텐츠 제작자B반", "전기차 시스템 엔지니어A반", "전기차 시스템 엔지니어B반", "자율주행 알고리즘 개발자A반", "자율주행 알고리즘 개발자B반", "생명과학 연구원A반", "생명과학 연구원B반", "재활의학 전문가A반", "재활의학 전문가B반", "임상의학 전문가A반", "임상의학 전문가B반", "인공지능 소프트웨어 개발자", "자율주행 시스템 엔지니어", "소프트웨어 프로그래밍 전문가", "지능형 로봇 제어 엔지니어", "IoT 임베디드 시스템 개발자", "빅데이터 프로그램 개발자"];
+const PM_COURSES = ["간호학과", "게임학과", "경영학부", "문화콘텐츠학과", "물리치료학과", "반려동물보건학과", "방사선학과", "사회복지학과", "약학과", "작업치료학과", "전기,배터리공학과", "혁신신약, 제약공학부", ""];
+
+// 강의실 아이콘 렌더링
+const roomGrid = document.getElementById('roomGrid');
+ROOMS.forEach(room => {
+  const grade = room.startsWith('3') ? '3학년' : room.startsWith('2') ? '2학년' : '1학년';
+  const icons = {'1': '🏫', '2': '🏛️', '3': '🎓'};
+  const icon = icons[room[0]] || '🏫';
+  const btn = document.createElement('button');
+  btn.className = 'room-btn';
+  btn.innerHTML = `<span class="room-icon">${icon}</span><span class="room-label">${room}</span><span class="room-grade">${grade}</span>`;
+  btn.onclick = () => { searchByRoom(room); highlightRoom(btn); };
+  btn.dataset.room = room;
+  roomGrid.appendChild(btn);
+});
+
+function highlightRoom(btn) {
+  document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── 메인 검색 ──
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+
+  // 학번 (4자리 숫자)
+  if (/^\d{4}$/.test(q)) { showStudentResult(q); return; }
+  // 이름 검색 (2자 이상 한글)
+  if (/^[가-힣]{2,}$/.test(q)) {
+    const found = findStudentByName(q);
+    if (found) { showStudentResult(found); return; }
+  }
+  // 강의실
+  if (ROOMS.includes(q)) { searchByRoom(q); return; }
+  // 오전 강좌
+  const amMatch = AM_COURSES.find(c => c.includes(q) || q.includes(c.replace(/[AB]반$/,'')));
+  if (amMatch) { searchByCourse(amMatch, 'am'); return; }
+  // 오후 강좌
+  const pmMatch = PM_COURSES.find(c => c.includes(q));
+  if (pmMatch) { searchByCourse(pmMatch, 'pm'); return; }
+  // 부분 이름 검색
+  const found2 = findStudentByNamePartial(q);
+  if (found2) { showStudentResult(found2); return; }
+
+  showNotFound(q);
+}
+
+function findStudentByName(name) {
+  for (const sess of Object.values(DATA)) {
+    for (const c of sess.courses) {
+      for (const s of c.students) {
+        if (s.name === name) return s.id;
+      }
+    }
+  }
+  return null;
+}
+
+function findStudentByNamePartial(q) {
+  for (const sess of Object.values(DATA)) {
+    for (const c of sess.courses) {
+      for (const s of c.students) {
+        if (s.name && s.name.includes(q)) return s.id;
+      }
+    }
+  }
+  return null;
+}
+
+// ── 학생 개인 결과 ──
+function showStudentResult(sid) {
+  const assignments = [];
+  let studentName = '', studentGrade = 0;
+  for (const [snum, sess] of Object.entries(DATA)) {
+    for (const c of sess.courses) {
+      const stu = c.students.find(s => s.id === sid);
+      if (stu) {
+        studentName = stu.name; studentGrade = stu.grade;
+        assignments.push({
+          sessNum: parseInt(snum), label: sess.label, ampm: sess.ampm,
+          course: c.course, classroom: c.classroom
+        });
+      }
+    }
+  }
+
+  if (!assignments.length) { showNotFound(sid); return; }
+
+  const gradeEmoji = ['','🟦','🟩','🟨'][studentGrade] || '⬜';
+  const gradeLabel = studentGrade + '학년';
+
+  let html = `
+    <div class="student-result">
+      <div class="student-header">
+        <div class="student-avatar">👤</div>
+        <div class="student-info">
+          <h2>${studentName || '(이름 없음)'} <span style="font-weight:400;font-size:14px;opacity:0.8">${sid}</span></h2>
+          <p>${gradeEmoji} ${gradeLabel}</p>
+        </div>
+        <div class="grade-badge">${gradeLabel}</div>
+      </div>`;
+
+  // 오전
+  const amItems = assignments.filter(a => a.ampm === '오전');
+  if (amItems.length) {
+    html += `<div class="section-divider">☀️ 오전 강좌</div>`;
+    amItems.forEach(a => {
+      html += `<div class="assignment-card">
+        <div class="asgn-time">${a.label}</div>
+        <div class="asgn-body">
+          <div class="asgn-course">${a.course}</div>
+          <div class="asgn-room">🏫 ${a.classroom}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // 오후
+  const pmItems = assignments.filter(a => a.ampm === '오후');
+  if (pmItems.length) {
+    html += `<div class="section-divider">🌤️ 오후 강좌</div>`;
+    pmItems.forEach(a => {
+      html += `<div class="assignment-card pm">
+        <div class="asgn-time">${a.label}</div>
+        <div class="asgn-body">
+          <div class="asgn-course">${a.course}</div>
+          <div class="asgn-room">🏫 ${a.classroom}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (!pmItems.length && studentGrade === 3) {
+    html += `<div class="section-divider">🌤️ 오후 강좌</div>
+      <div class="assignment-card pm" style="opacity:0.5">
+        <div class="asgn-time" style="color:#9ca3af;background:#f3f4f6">3·4강</div>
+        <div class="asgn-body"><div class="asgn-course" style="color:#9ca3af">3학년 — 오후 강좌 미배정</div></div>
+      </div>`;
+  }
+
+  html += `</div>`;
+  setResult(html);
+}
+
+// ── 강좌 결과 ──
+function searchByCourse(courseName, ampm) {
+  const sessions = ampm === 'am' ? ['1','2'] : ['3','4'];
+  const label = ampm === 'am' ? '오전 강좌' : '오후 강좌';
+  const icon = ampm === 'am' ? '☀️' : '🌤️';
+  const ispm = ampm === 'pm';
+
+  let html = `<div class="section-divider">${icon} ${label} — ${courseName}</div>`;
+
+  for (const snum of sessions) {
+    const sess = DATA[snum];
+    const course = sess.courses.find(c => c.course === courseName);
+    if (!course) continue;
+
+    html += `
+      <div class="course-result-header ${ispm?'pm':''}">
+        <div class="course-icon">${icon}</div>
+        <div>
+          <div class="course-title">${sess.label}</div>
+          <div class="course-meta">${course.course} · ${course.students.length}명</div>
+        </div>
+        <div class="course-room-badge">🏫 ${course.classroom}</div>
+      </div>
+      <div class="list-card">
+        <div class="student-grid">
+          ${course.students.map(s => chipHTML(s)).join('')}
+        </div>
+      </div>`;
+  }
+  setResult(html);
+}
+
+// ── 강의실 결과 ──
+function searchByRoom(room) {
+  document.getElementById('searchInput').value = room;
+  let html = `<div class="section-divider">🏫 강의실 ${room} — 전체 명단</div>`;
+  let found = false;
+
+  const sessionOrder = [['1','☀️','오전 1강 (1,2교시)',''],['2','☀️','오전 2강 (3,4교시)',''],
+                        ['3','🌤️','오후 3강 (5교시)','pm'],['4','🌤️','오후 4강 (6교시)','pm']];
+
+  for (const [snum, icon, label, pm] of sessionOrder) {
+    const sess = DATA[snum];
+    const course = sess.courses.find(c => c.classroom === room);
+    if (!course) continue;
+    found = true;
+    html += `
+      <div class="list-card">
+        <div class="list-card-header">
+          <div>
+            <div class="list-card-title">${icon} ${label}</div>
+            <div class="list-card-room">📚 ${course.course}</div>
+          </div>
+          <div class="list-card-count">${course.students.length}명</div>
+        </div>
+        <div class="student-grid">
+          ${course.students.map(s => chipHTML(s)).join('')}
+        </div>
+      </div>`;
+  }
+
+  if (!found) html += `<div class="not-found"><div class="icon">🏫</div><p>${room} 강의실 배정 정보가 없습니다.</p></div>`;
+  setResult(html);
+}
+
+function chipHTML(s) {
+  const gc = ['','g1','g2','g3'][s.grade] || '';
+  return `<div class="student-chip">
+    <span class="chip-grade ${gc}">${s.grade}</span>
+    <div><div class="chip-name">${s.name}</div><div class="chip-id">${s.id}</div></div>
+  </div>`;
+}
+
+function showNotFound(q) {
+  setResult(`<div class="not-found"><div class="icon">🔍</div><p>"${q}"에 대한 배정 정보를 찾을 수 없습니다.<br><span style="font-size:12px">학번·이름·강좌명·강의실을 확인해 주세요.</span></p></div>`);
+}
+
+function setResult(html) {
+  document.getElementById('resultSection').innerHTML = html;
+  document.getElementById('resultSection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+</body>
+</html>
